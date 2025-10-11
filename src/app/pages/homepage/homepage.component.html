@@ -1,0 +1,84 @@
+<div class="homepage">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1 class="hero-title">
+          Prenez soin de votre santé avec 
+          <span class="highlight">DocTime</span>
+        </h1>
+        <p class="hero-description">
+          La plateforme intelligente qui simplifie la prise de rendez-vous médicaux. 
+          Connectez-vous avec les meilleurs professionnels de santé en quelques clics.
+        </p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" (click)="onGetStarted()">
+            Commencer maintenant
+          </button>
+          <button class="btn btn-secondary" (click)="onLearnMore()">
+            En savoir plus
+          </button>
+        </div>
+        <div class="auth-links">
+          <p>Déjà un compte ? 
+            <a routerLink="/login" class="auth-link">Se connecter</a>
+          </p>
+        </div>
+      </div>
+      <div class="hero-image">
+        <div class="medical-illustration">
+          <div class="doctor-icon">👨‍⚕️</div>
+          <div class="patient-icon">👤</div>
+          <div class="calendar-icon">📅</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="stats-section">
+    <div class="container">
+      <div class="stats-grid">
+        <div *ngFor="let stat of stats" class="stat-item">
+          <div class="stat-number">{{ stat.number }}</div>
+          <div class="stat-label">{{ stat.label }}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Pourquoi choisir DocTime ?</h2>
+        <p>Découvrez les fonctionnalités qui font de DocTime la solution idéale</p>
+      </div>
+      <div class="features-grid">
+        <div *ngFor="let feature of features" class="feature-card">
+          <div class="feature-icon">{{ feature.icon }}</div>
+          <h3 class="feature-title">{{ feature.title }}</h3>
+          <p class="feature-description">{{ feature.description }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <div class="container">
+      <div class="cta-content">
+        <h2>Prêt à commencer ?</h2>
+        <p>Rejoignez des milliers de patients et médecins qui font confiance à DocTime</p>
+        <div class="cta-actions">
+          <button class="btn btn-primary btn-large" (click)="onGetStarted()">
+            Créer mon compte
+          </button>
+          <button class="btn btn-outline btn-large" routerLink="/login">
+            Me connecter
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

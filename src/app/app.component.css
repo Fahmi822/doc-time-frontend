@@ -1,0 +1,72 @@
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f9fa;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Ajustements selon la présence du header */
+.main-content.with-header {
+  padding-top: 70px; /* Hauteur du header */
+}
+
+/* Ajustements selon la présence du footer */
+.main-content.with-footer {
+  padding-bottom: 60px; /* Hauteur du footer */
+}
+
+/* Styles pour le contenu plein écran (login, signup) */
+.main-content:not(.with-header):not(.with-footer) {
+  min-height: 100vh;
+}
+
+/* Animation de transition pour les routes */
+router-outlet + * {
+  display: block;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main-content.with-header {
+    padding-top: 60px;
+  }
+  
+  .main-content.with-footer {
+    padding-bottom: 50px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content.with-header {
+    padding-top: 56px;
+  }
+}

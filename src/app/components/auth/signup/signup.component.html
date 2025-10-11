@@ -1,0 +1,155 @@
+<div class="signup-container">
+  <div class="signup-card">
+    <div class="logo-section">
+      <div class="logo">⏰</div>
+      <h1>DocTime</h1>
+    </div>
+
+    <h2>Rejoindre DocTime</h2>
+    <p class="subtitle">Créez votre compte en 2 minutes</p>
+    
+    <!-- Sélection du rôle -->
+    <div class="role-selection">
+      <h3>Je suis :</h3>
+      <div class="role-options">
+        <div 
+          *ngFor="let role of roles"
+          class="role-option"
+          [class.selected]="selectedRole === role.value"
+          (click)="onRoleSelect(role.value)"
+        >
+          <div class="role-icon">{{ role.value === 'PATIENT' ? '👤' : '👨‍⚕️' }}</div>
+          <div class="role-info">
+            <h4>{{ role.label }}</h4>
+            <p>{{ role.description }}</p>
+          </div>
+          <div class="checkmark" *ngIf="selectedRole === role.value">✓</div>
+        </div>
+      </div>
+    </div>
+
+    <form [formGroup]="signupForm" (ngSubmit)="onSubmit()">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="prenom">Prénom</label>
+          <input
+            type="text"
+            id="prenom"
+            formControlName="prenom"
+            class="form-control"
+            placeholder="Votre prénom"
+            [class.is-invalid]="signupForm.get('prenom')?.invalid && signupForm.get('prenom')?.touched"
+          >
+          <div class="invalid-feedback" *ngIf="signupForm.get('prenom')?.errors?.['required'] && signupForm.get('prenom')?.touched">
+            Le prénom est requis
+          </div>
+          <div class="invalid-feedback" *ngIf="signupForm.get('prenom')?.errors?.['minlength'] && signupForm.get('prenom')?.touched">
+            Minimum 2 caractères
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="nom">Nom</label>
+          <input
+            type="text"
+            id="nom"
+            formControlName="nom"
+            class="form-control"
+            placeholder="Votre nom"
+            [class.is-invalid]="signupForm.get('nom')?.invalid && signupForm.get('nom')?.touched"
+          >
+          <div class="invalid-feedback" *ngIf="signupForm.get('nom')?.errors?.['required'] && signupForm.get('nom')?.touched">
+            Le nom est requis
+          </div>
+          <div class="invalid-feedback" *ngIf="signupForm.get('nom')?.errors?.['minlength'] && signupForm.get('nom')?.touched">
+            Minimum 2 caractères
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          formControlName="email"
+          class="form-control"
+          placeholder="votre@email.com"
+          [class.is-invalid]="signupForm.get('email')?.invalid && signupForm.get('email')?.touched"
+        >
+        <div class="invalid-feedback" *ngIf="signupForm.get('email')?.errors?.['required'] && signupForm.get('email')?.touched">
+          L'email est requis
+        </div>
+        <div class="invalid-feedback" *ngIf="signupForm.get('email')?.errors?.['email'] && signupForm.get('email')?.touched">
+          Format d'email invalide
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="motDePasse">Mot de passe</label>
+          <input
+            type="password"
+            id="motDePasse"
+            formControlName="motDePasse"
+            class="form-control"
+            placeholder="Mot de passe"
+            [class.is-invalid]="signupForm.get('motDePasse')?.invalid && signupForm.get('motDePasse')?.touched"
+          >
+          <div class="invalid-feedback" *ngIf="signupForm.get('motDePasse')?.errors?.['required'] && signupForm.get('motDePasse')?.touched">
+            Le mot de passe est requis
+          </div>
+          <div class="invalid-feedback" *ngIf="signupForm.get('motDePasse')?.errors?.['minlength'] && signupForm.get('motDePasse')?.touched">
+            Minimum 6 caractères
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="confirmPassword">Confirmation</label>
+          <input
+            type="password"
+            id="confirmPassword"
+            formControlName="confirmPassword"
+            class="form-control"
+            placeholder="Confirmer le mot de passe"
+            [class.is-invalid]="signupForm.errors?.['passwordMismatch'] && signupForm.get('confirmPassword')?.touched"
+          >
+          <div class="invalid-feedback" *ngIf="signupForm.errors?.['passwordMismatch'] && signupForm.get('confirmPassword')?.touched">
+            Les mots de passe ne correspondent pas
+          </div>
+        </div>
+      </div>
+
+      <div class="error-message" *ngIf="errorMessage">
+        <i class="icon">⚠️</i>
+        {{ errorMessage }}
+      </div>
+
+      <div class="success-message" *ngIf="successMessage">
+        <i class="icon">✅</i>
+        {{ successMessage }}
+      </div>
+
+      <button
+        type="submit"
+        class="btn btn-primary btn-block"
+        [disabled]="signupForm.invalid || !selectedRole || isLoading"
+      >
+        <span *ngIf="!isLoading">Créer mon compte</span>
+        <span *ngIf="isLoading" class="loading">
+          <span class="spinner"></span>
+          Inscription...
+        </span>
+      </button>
+    </form>
+
+    <div class="login-link">
+      <p>Déjà un compte ? <a routerLink="/login" class="link">Se connecter</a></p>
+    </div>
+
+    <div class="back-link">
+      <a routerLink="/" class="link">
+        <i>←</i>
+        Retour à l'accueil
+      </a>
+    </div>
+  </div>
+</div>

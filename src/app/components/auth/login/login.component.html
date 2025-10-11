@@ -1,0 +1,77 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="logo-section">
+      <div class="logo">⏰</div>
+      <h1>DocTime</h1>
+    </div>
+    
+    <h2>Connexion à votre compte</h2>
+    <p class="subtitle">Accédez à votre espace personnel</p>
+    
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          formControlName="email"
+          class="form-control"
+          placeholder="votre@email.com"
+          [class.is-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+        >
+        <div class="invalid-feedback" *ngIf="loginForm.get('email')?.errors?.['required'] && loginForm.get('email')?.touched">
+          L'email est requis
+        </div>
+        <div class="invalid-feedback" *ngIf="loginForm.get('email')?.errors?.['email'] && loginForm.get('email')?.touched">
+          Format d'email invalide
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="motDePasse">Mot de passe</label>
+        <input
+          type="password"
+          id="motDePasse"
+          formControlName="motDePasse"
+          class="form-control"
+          placeholder="Votre mot de passe"
+          [class.is-invalid]="loginForm.get('motDePasse')?.invalid && loginForm.get('motDePasse')?.touched"
+        >
+        <div class="invalid-feedback" *ngIf="loginForm.get('motDePasse')?.errors?.['required'] && loginForm.get('motDePasse')?.touched">
+          Le mot de passe est requis
+        </div>
+        <div class="invalid-feedback" *ngIf="loginForm.get('motDePasse')?.errors?.['minlength'] && loginForm.get('motDePasse')?.touched">
+          Minimum 6 caractères
+        </div>
+      </div>
+
+      <div class="error-message" *ngIf="errorMessage">
+        <i class="icon">⚠️</i>
+        {{ errorMessage }}
+      </div>
+
+      <button
+        type="submit"
+        class="btn btn-primary btn-block"
+        [disabled]="loginForm.invalid || isLoading"
+      >
+        <span *ngIf="!isLoading">Se connecter</span>
+        <span *ngIf="isLoading" class="loading">
+          <span class="spinner"></span>
+          Connexion...
+        </span>
+      </button>
+    </form>
+
+    <div class="signup-link">
+      <p>Pas encore de compte ? <a routerLink="/signup" class="link">S'inscrire</a></p>
+    </div>
+
+    <div class="back-link">
+      <a routerLink="/" class="link">
+        <i>←</i>
+        Retour à l'accueil
+      </a>
+    </div>
+  </div>
+</div>
