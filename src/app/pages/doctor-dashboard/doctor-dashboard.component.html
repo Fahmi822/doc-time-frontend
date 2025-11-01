@@ -1,1 +1,223 @@
-<p>doctor-dashboard works!</p>
+<div class="doctor-dashboard">
+  <div class="dashboard-header">
+    <h1>Tableau de Bord Docteur</h1>
+    <p>Gérez votre cabinet et vos rendez-vous</p>
+  </div>
+
+  <!-- Statistiques -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">📅</div>
+      <div class="stat-info">
+        <div class="stat-number">{{ statistiques.totalRendezVous || 0 }}</div>
+        <div class="stat-label">RDV ce mois</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-info">
+        <div class="stat-number">{{ statistiques.rendezVousConfirmes || 0 }}</div>
+        <div class="stat-label">RDV Confirmés</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">👥</div>
+      <div class="stat-info">
+        <div class="stat-number">{{ statistiques.nouveauxPatients || 0 }}</div>
+        <div class="stat-label">Nouveaux Patients</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💰</div>
+      <div class="stat-info">
+        <div class="stat-number">{{ statistiques.revenuMensuel || 0 }} €</div>
+        <div class="stat-label">Revenu Mensuel</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation par onglets -->
+  <div class="tabs-navigation">
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'aujourdhui'"
+      (click)="setActiveTab('aujourdhui')">
+      Aujourd'hui
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'tous'"
+      (click)="setActiveTab('tous')">
+      Tous les RDV
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'disponibilites'"
+      (click)="setActiveTab('disponibilites')">
+      Mes Disponibilités
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'patients'"
+      (click)="setActiveTab('patients')">
+      Mes Patients
+    </button>
+  </div>
+
+  <!-- Contenu des onglets -->
+  <div class="tab-content">
+    
+    <!-- Onglet Aujourd'hui -->
+    <div *ngIf="activeTab === 'aujourdhui'" class="tab-pane">
+      <div class="section-header">
+        <h2>Rendez-vous d'Aujourd'hui</h2>
+        <!-- <p class="date-info">{{ getDateFormatee(new Date().toISOString()) }}</p>-->
+      </div>
+
+      <div *ngIf="isLoading" class="loading">Chargement...</div>
+
+      <div *ngIf="!isLoading && rendezVousAujourdhui.length === 0" class="empty-state">
+        <p>Aucun rendez-vous prévu pour aujourd'hui</p>
+      </div>
+
+      <div *ngIf="!isLoading && rendezVousAujourdhui.length > 0" class="rendez-vous-list">
+        <div *ngFor="let rdv of rendezVousAujourdhui" class="rendez-vous-card" [class.past]="estRendezVousPasse(rdv.dateHeure)">
+          <div class="rdv-header">
+            <div class="patient-info">
+              <h3>{{ rdv.patient.prenom }} {{ rdv.patient.nom }}</h3>
+              <p class="patient-contact">{{ rdv.patient.telephone || 'Tél. non renseigné' }}</p>
+            </div>
+            <div class="rdv-time">
+              <span class="time-badge">{{ getHeureFromDate(rdv.dateHeure) }}</span>
+              <span class="badge" [class]="getStatutBadgeClass(rdv.statut)">
+                {{ rdv.statut | lowercase }}
+              </span>
+            </div>
+          </div>
+          
+          <div class="rdv-details">
+            <p><strong>Motif:</strong> {{ rdv.motif }}</p>
+            <p *ngIf="rdv.patient.dateNaissance"><strong>Âge:</strong> {{ calculerAge(rdv.patient.dateNaissance) }} ans</p>
+            <p *ngIf="rdv.patient.antecedentsMedicaux"><strong>Antécédents:</strong> {{ rdv.patient.antecedentsMedicaux }}</p>
+          </div>
+
+          <div class="rdv-notes" *ngIf="rdv.notes">
+            <strong>Notes:</strong> {{ rdv.notes }}
+          </div>
+
+          <div class="rdv-actions" *ngIf="rdv.statut !== 'TERMINE' && rdv.statut !== 'ANNULE'">
+            <button *ngIf="rdv.statut === 'PLANIFIE'" class="btn btn-success btn-sm" (click)="confirmerRendezVous(rdv.id)">
+              Confirmer
+            </button>
+            <button *ngIf="rdv.statut === 'CONFIRME'" class="btn btn-info btn-sm" (click)="terminerRendezVous(rdv.id)">
+              Terminer
+            </button>
+            <button class="btn btn-danger btn-sm" (click)="annulerRendezVous(rdv.id)">
+              Annuler
+            </button>
+            <button class="btn btn-outline btn-sm" (click)="ouvrirModalNotes(rdv)">
+              Ajouter Notes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet Tous les RDV -->
+    <div *ngIf="activeTab === 'tous'" class="tab-pane">
+      <div class="section-header">
+        <h2>Tous mes Rendez-vous</h2>
+      </div>
+
+      <div class="rendez-vous-list">
+        <div *ngFor="let rdv of rendezVous" class="rendez-vous-card">
+          <div class="rdv-header">
+            <div class="patient-info">
+              <h3>{{ rdv.patient.prenom }} {{ rdv.patient.nom }}</h3>
+              <p class="patient-contact">{{ rdv.patient.email }}</p>
+            </div>
+            <div class="rdv-time">
+              <span class="date-time">{{ rdv.dateHeure | date:'dd/MM/yyyy à HH:mm' }}</span>
+              <span class="badge" [class]="getStatutBadgeClass(rdv.statut)">
+                {{ rdv.statut | lowercase }}
+              </span>
+            </div>
+          </div>
+          
+          <div class="rdv-details">
+            <p><strong>Motif:</strong> {{ rdv.motif }}</p>
+          </div>
+
+          <div class="rdv-actions" *ngIf="rdv.statut !== 'TERMINE' && rdv.statut !== 'ANNULE'">
+            <button *ngIf="rdv.statut === 'PLANIFIE'" class="btn btn-success btn-sm" (click)="confirmerRendezVous(rdv.id)">
+              Confirmer
+            </button>
+            <button *ngIf="rdv.statut === 'CONFIRME'" class="btn btn-info btn-sm" (click)="terminerRendezVous(rdv.id)">
+              Terminer
+            </button>
+            <button class="btn btn-danger btn-sm" (click)="annulerRendezVous(rdv.id)">
+              Annuler
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet Disponibilités -->
+    <div *ngIf="activeTab === 'disponibilites'" class="tab-pane">
+      <div class="section-header">
+        <h2>Mes Disponibilités</h2>
+        <button class="btn btn-primary" (click)="ouvrirModalDisponibilite()">
+          + Ajouter Disponibilité
+        </button>
+      </div>
+
+      <div *ngIf="disponibilites.length === 0" class="empty-state">
+        <p>Aucune disponibilité planifiée</p>
+      </div>
+
+      <div *ngIf="disponibilites.length > 0" class="disponibilites-list">
+        <div *ngFor="let dispo of disponibilites" class="disponibilite-card">
+          <div class="dispo-info">
+            <h4>{{ dispo.dateHeureDebut | date:'EEEE dd/MM/yyyy' }}</h4>
+            <p class="dispo-horaire">
+              De {{ dispo.dateHeureDebut | date:'HH:mm' }} à {{ dispo.dateHeureFin | date:'HH:mm' }}
+            </p>
+          </div>
+          <div class="dispo-status" [class.disponible]="dispo.disponible" [class.indisponible]="!dispo.disponible">
+            {{ dispo.disponible ? 'Disponible' : 'Indisponible' }}
+          </div>
+          <button class="btn btn-danger btn-sm" (click)="supprimerDisponibilite(dispo.id)">
+            Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet Patients -->
+    <div *ngIf="activeTab === 'patients'" class="tab-pane">
+      <div class="section-header">
+        <h2>Mes Patients</h2>
+      </div>
+
+      <div class="patients-list">
+        <div *ngFor="let rdv of getPatientsUniques()" class="patient-card">
+          <div class="patient-avatar">
+            {{ rdv.patient.prenom.charAt(0) }}{{ rdv.patient.nom.charAt(0) }}
+          </div>
+          <div class="patient-info">
+            <h3>{{ rdv.patient.prenom }} {{ rdv.patient.nom }}</h3>
+            <p class="patient-email">{{ rdv.patient.email }}</p>
+            <p *ngIf="rdv.patient.telephone" class="patient-phone">{{ rdv.patient.telephone }}</p>
+            <p *ngIf="rdv.patient.dateNaissance" class="patient-age">
+              {{ calculerAge(rdv.patient.dateNaissance) }} ans
+            </p>
+          </div>
+          <div class="patient-stats">
+            <span class="stat">Dernier RDV: {{ getDernierRendezVous(rdv.patient.id) | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

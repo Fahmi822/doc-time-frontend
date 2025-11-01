@@ -1,8 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterOutlet } from '@angular/router';
-import { HeaderComponent } from './components/layout/header/header.component';
-import { FooterComponent } from './components/layout/footer/footer.component';
+import { Router, RouterOutlet, RouterLink } from '@angular/router';
 import { AuthService } from './services/auth.service';
 
 @Component({
@@ -11,8 +9,7 @@ import { AuthService } from './services/auth.service';
   imports: [
     CommonModule, 
     RouterOutlet,
-    HeaderComponent,
-    FooterComponent
+    RouterLink
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
@@ -26,26 +23,25 @@ export class AppComponent {
   ) {}
 
   shouldShowHeader(): boolean {
-    // Ne pas montrer le header sur les pages d'authentification et la page d'accueil pour les non-connectés
     const currentRoute = this.router.url;
     const authPages = ['/login', '/signup'];
     
+    // Ne pas montrer le header sur les pages d'authentification
     if (authPages.includes(currentRoute)) {
       return false;
     }
     
-    // Sur la page d'accueil, montrer le header seulement si connecté
-    if (currentRoute === '/') {
-      return this.authService.isLoggedIn();
-    }
-    
-    // Sur les autres pages, montrer le header si connecté
-    return this.authService.isLoggedIn();
+    return true; // Montrer le header sur toutes les autres pages
+  }
+
+  shouldShowAuthButtons(): boolean {
+    const currentRoute = this.router.url;
+    return currentRoute === '/'; // Montrer les boutons auth seulement sur la page d'accueil
   }
 
   shouldShowFooter(): boolean {
-    // Montrer le footer seulement sur la page d'accueil pour les non-connectés
     const currentRoute = this.router.url;
+    // Montrer le footer seulement sur la page d'accueil pour les non-connectés
     return currentRoute === '/' && !this.authService.isLoggedIn();
   }
 
@@ -61,5 +57,14 @@ export class AppComponent {
     }
     
     return classes.join(' ');
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/']);
+  }
+
+  goToHome(): void {
+    this.router.navigate(['/']);
   }
 }

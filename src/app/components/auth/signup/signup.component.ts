@@ -46,9 +46,7 @@ export class SignupComponent {
     const confirmPassword = form.get('confirmPassword');
     
     if (password && confirmPassword && password.value !== confirmPassword.value) {
-      confirmPassword.setErrors({ passwordMismatch: true });
-    } else {
-      confirmPassword?.setErrors(null);
+      confirmPassword?.setErrors({ passwordMismatch: true });
     }
     return null;
   }
@@ -58,58 +56,43 @@ export class SignupComponent {
   }
 
   onSubmit(): void {
-  if (this.signupForm.valid && this.selectedRole) {
-    this.isLoading = true;
-    this.errorMessage = '';
-    this.successMessage = '';
+    if (this.signupForm.valid && this.selectedRole) {
+      this.isLoading = true;
+      this.errorMessage = '';
+      this.successMessage = '';
 
-    const userData = {
-      ...this.signupForm.value,
-      role: this.selectedRole
-    };
+      const userData = {
+        ...this.signupForm.value,
+        role: this.selectedRole
+      };
 
-    delete userData.confirmPassword;
+      // Supprimer le champ de confirmation
+      delete userData.confirmPassword;
 
-    this.authService.signup(userData).subscribe({
-      next: (response: any) => {
-        console.log('Réponse inscription:', response);
-        this.successMessage = typeof response === 'string' ? response : 'Inscription réussie !';
-        this.isLoading = false;
-        
-        setTimeout(() => {
-          this.router.navigate(['/login']);
-        }, 2000);
-      },
-      error: (error) => {
-        console.error('Erreur détaillée inscription:', error);
-        
-        // Gestion détaillée des erreurs
-        if (error.error) {
-          // Si l'erreur est une string
-          if (typeof error.error === 'string') {
-            this.errorMessage = error.error;
-          } 
-          // Si l'erreur est un objet avec une propriété message
-          else if (error.error.message) {
-            this.errorMessage = error.error.message;
+      this.authService.signup(userData).subscribe({
+        next: (response: any) => {
+          console.log('Réponse inscription:', response);
+          this.successMessage = typeof response === 'string' ? response : 'Inscription réussie !';
+          this.isLoading = false;
+          
+          // Redirection après 2 secondes
+          setTimeout(() => {
+            this.router.navigate(['/login']);
+          }, 2000);
+        },
+        error: (error) => {
+          console.error('Erreur inscription:', error);
+          this.isLoading = false;
+          
+          if (error.error) {
+            this.errorMessage = typeof error.error === 'string' ? error.error : 'Erreur lors de l\'inscription';
+          } else {
+            this.errorMessage = 'Erreur de connexion au serveur';
           }
-          // Si l'erreur est un objet avec une propriété error
-          else if (error.error.error) {
-            this.errorMessage = error.error.error;
-          }
-          // Autre format
-          else {
-            this.errorMessage = 'Erreur lors de l\'inscription';
-          }
-        } else if (error.message) {
-          this.errorMessage = error.message;
-        } else {
-          this.errorMessage = 'Erreur inconnue lors de l\'inscription';
         }
-        
-        this.isLoading = false;
-      }
-    });
+      });
+    } else {
+      this.errorMessage = 'Veuillez remplir tous les champs et sélectionner un rôle';
+    }
   }
-}
 }

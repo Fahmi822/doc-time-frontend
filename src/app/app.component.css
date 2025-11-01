@@ -1,72 +1,104 @@
-.app-container {
-  min-height: 100vh;
+.simple-header {
+  background: #2563eb;
+  color: white;
+  padding: 1rem 2rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.header-content {
   display: flex;
-  flex-direction: column;
-  background-color: #f8f9fa;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.app-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.main-content {
-  flex: 1;
+.brand {
   display: flex;
-  flex-direction: column;
-  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: bold;
+  font-size: 1.2rem;
 }
 
-/* Ajustements selon la présence du header */
-.main-content.with-header {
-  padding-top: 70px; /* Hauteur du header */
+.logo {
+  font-size: 1.5rem;
 }
 
-/* Ajustements selon la présence du footer */
-.main-content.with-footer {
-  padding-bottom: 60px; /* Hauteur du footer */
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
-/* Styles pour le contenu plein écran (login, signup) */
-.main-content:not(.with-header):not(.with-footer) {
-  min-height: 100vh;
+.logout-btn {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 1px solid white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
 }
 
-/* Animation de transition pour les routes */
-router-outlet + * {
-  display: block;
-  animation: fadeIn 0.5s ease-in-out;
+.logout-btn:hover {
+  background: white;
+  color: #2563eb;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.auth-btn {
+  color: white;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: 1px solid white;
+  font-size: 0.9rem;
+}
+
+.auth-btn.primary {
+  background: white;
+  color: #2563eb;
+}
+
+.auth-btn:hover {
+  background: white;
+  color: #2563eb;
+}
+
+.simple-footer {
+  background: #1f2937;
+  color: white;
+  text-align: center;
+  padding: 1.5rem;
+  margin-top: auto;
+}
+
+main {
+  min-height: calc(100vh - 140px);
+}
+
+main.with-header {
+  min-height: calc(100vh - 80px);
+}
+
+main.with-footer {
+  min-height: calc(100vh - 200px);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .main-content.with-header {
-    padding-top: 60px;
+  .simple-header {
+    padding: 1rem;
   }
   
-  .main-content.with-footer {
-    padding-bottom: 50px;
+  .header-content {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
   }
-}
-
-@media (max-width: 480px) {
-  .main-content.with-header {
-    padding-top: 56px;
+  
+  .user-actions {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 }

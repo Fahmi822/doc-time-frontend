@@ -9,6 +9,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
   
+  // Ne pas ajouter le token aux requêtes d'authentification
   if (req.url.includes('/auth/')) {
     return next(req);
   }

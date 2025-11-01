@@ -16,10 +16,22 @@ export const routes: Routes = [
     data: { role: 'PATIENT' }
   },
   { 
+    path: 'patient/nouveau-rendezvous', 
+    loadComponent: () => import('./pages/patient/nouveau-rendezvous.component').then(m => m.NouveauRendezVousComponent),
+    canActivate: [authGuard, roleGuard],
+    data: { role: 'PATIENT' }
+  },
+  { 
+    path: 'admin/dashboard', 
+    loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
+    canActivate: [authGuard, roleGuard],
+    data: { role: 'ADMIN' }
+  },
+  { 
     path: 'doctor/dashboard', 
     loadComponent: () => import('./pages/doctor-dashboard/doctor-dashboard.component').then(m => m.DoctorDashboardComponent),
     canActivate: [authGuard, roleGuard],
     data: { role: 'DOCTEUR' }
   },
-  
+  { path: '**', redirectTo: '' } // Redirection pour les routes inconnues
 ];

@@ -1,0 +1,129 @@
+<div class="nouveau-rendezvous">
+  <div class="header">
+    <h1>Prendre un Rendez-vous</h1>
+    <p>Choisissez un docteur et sélectionnez une date</p>
+  </div>
+
+  <form [formGroup]="rendezVousForm" (ngSubmit)="onSubmit()" class="rendezvous-form">
+    
+    <!-- Sélection du docteur -->
+    <div class="form-section">
+      <h2>1. Choisir un Docteur</h2>
+      
+      <div class="search-box">
+        <input 
+          type="text" 
+          placeholder="Rechercher un docteur par nom, prénom ou spécialité..."
+          class="search-input"
+          (input)="onDocteurSearch($event)">
+      </div>
+
+      <div class="docteurs-list">
+        <div 
+          *ngFor="let docteur of filteredDocteurs" 
+          class="docteur-option"
+          [class.selected]="selectedDocteur?.id === docteur.id"
+          (click)="onDocteurSelect(docteur)">
+          
+          <div class="docteur-avatar">
+            <img [src]="docteur.photo || 'assets/default-avatar.png'" [alt]="docteur.prenom + ' ' + docteur.nom">
+          </div>
+          
+          <div class="docteur-details">
+            <h3>Dr. {{ docteur.nom }} {{ docteur.prenom }}</h3>
+            <p class="specialite">{{ docteur.specialite?.titre }}</p>
+            <p class="experience">{{ docteur.anneesExperience }} ans d'expérience</p>
+            <div class="rating">
+              <span class="stars">⭐ {{ docteur.noteMoyenne | number:'1.1-1' }}</span>
+              <span class="reviews">({{ docteur.nombreAvis }} avis)</span>
+            </div>
+            <p class="tarif">{{ docteur.tarifConsultation }} €</p>
+          </div>
+          
+          <div class="selection-indicator" *ngIf="selectedDocteur?.id === docteur.id">
+            ✓
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sélection de la date et heure -->
+    <div class="form-section" *ngIf="selectedDocteur">
+      <h2>2. Choisir la Date et l'Heure</h2>
+      
+      <div class="date-time-selection">
+        <div class="form-group">
+          <label for="date">Date</label>
+          <input 
+            type="date" 
+            id="date"
+            formControlName="date"
+            class="form-control"
+            [min]="getTomorrowDate()"
+            [class.is-invalid]="rendezVousForm.get('date')?.invalid && rendezVousForm.get('date')?.touched">
+          <div class="invalid-feedback" *ngIf="rendezVousForm.get('date')?.errors?.['required'] && rendezVousForm.get('date')?.touched">
+            La date est requise
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="heure">Heure</label>
+          <select 
+            id="heure"
+            formControlName="heure"
+            class="form-control"
+            [class.is-invalid]="rendezVousForm.get('heure')?.invalid && rendezVousForm.get('heure')?.touched">
+            <option value="">Sélectionnez une heure</option>
+            <option *ngFor="let slot of availableSlots" [value]="slot">{{ slot }}</option>
+          </select>
+          <div class="invalid-feedback" *ngIf="rendezVousForm.get('heure')?.errors?.['required'] && rendezVousForm.get('heure')?.touched">
+            L'heure est requise
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Motif de la consultation -->
+    <div class="form-section" *ngIf="selectedDocteur">
+      <h2>3. Motif de la Consultation</h2>
+      
+      <div class="form-group">
+        <label for="motif">Décrivez brièvement le motif de votre consultation</label>
+        <textarea 
+          id="motif"
+          formControlName="motif"
+          class="form-control"
+          rows="4"
+          placeholder="Ex: Consultation de routine, douleurs particulières, suivi de traitement..."
+          [class.is-invalid]="rendezVousForm.get('motif')?.invalid && rendezVousForm.get('motif')?.touched">
+        </textarea>
+        <div class="invalid-feedback" *ngIf="rendezVousForm.get('motif')?.errors?.['required'] && rendezVousForm.get('motif')?.touched">
+          Le motif est requis
+        </div>
+        <div class="invalid-feedback" *ngIf="rendezVousForm.get('motif')?.errors?.['minlength'] && rendezVousForm.get('motif')?.touched">
+          Minimum 10 caractères
+        </div>
+        <div class="char-count">
+          {{ rendezVousForm.get('motif')?.value?.length || 0 }}/10 caractères
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="onCancel()">
+        Annuler
+      </button>
+      <button 
+        type="submit" 
+        class="btn btn-primary"
+        [disabled]="rendezVousForm.invalid || isLoading">
+        <span *ngIf="!isLoading">Confirmer le Rendez-vous</span>
+        <span *ngIf="isLoading" class="loading">
+          <span class="spinner"></span>
+          Création...
+        </span>
+      </button>
+    </div>
+  </form>
+</div>

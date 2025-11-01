@@ -1,1 +1,290 @@
-<p>dashboard works!</p>
+<div class="admin-dashboard">
+  <!-- En-tête -->
+  <div class="dashboard-header">
+    <h1>Tableau de Bord Administrateur</h1>
+    <p>Gestion complète de la plateforme DocTime</p>
+  </div>
+
+  <!-- Navigation par onglets -->
+  <div class="tabs-navigation">
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'tableau-de-bord'"
+      (click)="setActiveTab('tableau-de-bord')">
+      📊 Tableau de Bord
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'utilisateurs'"
+      (click)="setActiveTab('utilisateurs')">
+      👥 Utilisateurs
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'rendezvous'"
+      (click)="setActiveTab('rendezvous')">
+      📅 Rendez-vous
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'rapports'"
+      (click)="setActiveTab('rapports')">
+      📈 Rapports
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'parametres'"
+      (click)="setActiveTab('parametres')">
+      ⚙️ Paramètres
+    </button>
+  </div>
+
+  <!-- Contenu des onglets -->
+  <div class="tab-content">
+    
+    <!-- Onglet Tableau de Bord -->
+    <div *ngIf="activeTab === 'tableau-de-bord'" class="tab-pane">
+      
+      <!-- Statistiques Globales -->
+      <div class="stats-grid-large">
+        <div class="stat-card-large">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <div class="stat-number">{{ statistiques.totalUtilisateurs }}</div>
+            <div class="stat-label">Utilisateurs Totaux</div>
+          </div>
+          <div class="stat-breakdown">
+            <span class="breakdown-item">{{ statistiques.totalPatients }} Patients</span>
+            <span class="breakdown-item">{{ statistiques.totalDocteurs }} Docteurs</span>
+          </div>
+        </div>
+
+        <div class="stat-card-large">
+          <div class="stat-icon">📅</div>
+          <div class="stat-info">
+            <div class="stat-number">{{ statistiques.totalRendezVous }}</div>
+            <div class="stat-label">RDV Totaux</div>
+          </div>
+          <div class="stat-breakdown">
+            <span class="breakdown-item">{{ statistiques.rendezVousAujourdhui }} Aujourd'hui</span>
+          </div>
+        </div>
+
+        <div class="stat-card-large">
+          <div class="stat-icon">💰</div>
+          <div class="stat-info">
+            <div class="stat-number">{{ statistiques.revenuMensuel }} €</div>
+            <div class="stat-label">Revenu Mensuel</div>
+          </div>
+        </div>
+
+        <div class="stat-card-large">
+          <div class="stat-icon">📊</div>
+          <div class="stat-info">
+            <div class="stat-number">{{ statistiques.tauxOccupation }}%</div>
+            <div class="stat-label">Taux d'Occupation</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions Rapides -->
+      <div class="quick-actions">
+        <h2>Actions Rapides</h2>
+        <div class="actions-grid">
+          <button class="action-card" (click)="ouvrirModalCreationUtilisateur()">
+            <div class="action-icon">➕</div>
+            <div class="action-text">Nouvel Utilisateur</div>
+          </button>
+          <button class="action-card" (click)="ouvrirGestionUtilisateurs()">
+            <div class="action-icon">👥</div>
+            <div class="action-text">Gérer Utilisateurs</div>
+          </button>
+          <button class="action-card" (click)="ouvrirGestionRendezVous()">
+            <div class="action-icon">📅</div>
+            <div class="action-text">Voir RDV</div>
+          </button>
+          <button class="action-card" (click)="ouvrirRapports()">
+            <div class="action-icon">📈</div>
+            <div class="action-text">Générer Rapport</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Rendez-vous Récents -->
+      <div class="recent-section">
+        <div class="section-header">
+          <h2>Rendez-vous Récents</h2>
+          <button class="btn btn-outline" (click)="ouvrirGestionRendezVous()">
+            Voir Tout
+          </button>
+        </div>
+
+        <div *ngIf="rendezVousRecents.length === 0" class="empty-state">
+          <p>Aucun rendez-vous récent</p>
+        </div>
+
+        <div *ngIf="rendezVousRecents.length > 0" class="recent-list">
+          <div *ngFor="let rdv of rendezVousRecents" class="recent-card">
+            <div class="recent-info">
+              <div class="recent-main">
+                <h4>{{ rdv.patient.prenom }} {{ rdv.patient.nom }}</h4>
+                <p class="recent-docteur">avec Dr. {{ rdv.docteur.prenom }} {{ rdv.docteur.nom }}</p>
+              </div>
+              <div class="recent-time">
+                <div class="recent-date">{{ getDateFormatee(rdv.dateHeure) }}</div>
+                <div class="recent-heure">{{ getHeureFormatee(rdv.dateHeure) }}</div>
+              </div>
+            </div>
+            <div class="recent-status">
+              <span class="badge" [class]="getRendezVousStatutBadgeClass(rdv.statut)">
+                {{ rdv.statut | lowercase }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet Utilisateurs -->
+    <div *ngIf="activeTab === 'utilisateurs'" class="tab-pane">
+      <div class="section-header">
+        <h2>Gestion des Utilisateurs</h2>
+        <button class="btn btn-primary" (click)="ouvrirModalCreationUtilisateur()">
+          ➕ Nouvel Utilisateur
+        </button>
+      </div>
+
+      <!-- Filtres -->
+      <div class="filters-bar">
+        <div class="filter-group">
+          <label>Rôle:</label>
+          <select [(ngModel)]="filtreRole" (change)="onFiltreRoleChange(filtreRole)" class="filter-select">
+            <option value="TOUS">Tous les rôles</option>
+            <option value="PATIENT">Patients</option>
+            <option value="DOCTEUR">Docteurs</option>
+            <option value="ADMIN">Administrateurs</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Statut:</label>
+          <select [(ngModel)]="filtreStatut" class="filter-select">
+            <option value="TOUS">Tous les statuts</option>
+            <option value="ACTIF">Actifs</option>
+            <option value="INACTIF">Inactifs</option>
+          </select>
+        </div>
+
+        <div class="filter-group search-group">
+          <input 
+            type="text" 
+            [(ngModel)]="rechercheUtilisateur"
+            (input)="onRechercheChange()"
+            placeholder="Rechercher un utilisateur..."
+            class="search-input">
+        </div>
+      </div>
+
+      <!-- Tableau des utilisateurs -->
+      <div class="table-container">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Nom & Prénom</th>
+              <th>Email</th>
+              <th>Rôle</th>
+              <th>Statut</th>
+              <th>Date Création</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of getUtilisateursFiltres()" [class.inactive]="!user.actif">
+              <td class="user-info">
+                <div class="user-avatar">
+                  {{ user.prenom.charAt(0) }}{{ user.nom.charAt(0) }}
+                </div>
+                <div class="user-details">
+                  <strong>{{ user.prenom }} {{ user.nom }}</strong>
+                  <span class="user-phone" *ngIf="user.telephone">{{ user.telephone }}</span>
+                </div>
+              </td>
+              <td>{{ user.email }}</td>
+              <td>
+                <span class="badge" [class]="getRoleBadgeClass(user.role)">
+                  {{ user.role | lowercase }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [class]="getStatutBadgeClass(user.actif)">
+                  {{ user.actif ? 'actif' : 'inactif' }}
+                </span>
+              </td>
+              <td>{{ getDateFormatee(user.dateCreation) }}</td>
+              <td class="actions-cell">
+                <button class="btn btn-outline btn-sm" (click)="ouvrirModalEditionUtilisateur(user)">
+                  ✏️
+                </button>
+                <button 
+                  class="btn btn-warning btn-sm" 
+                  (click)="toggleActifUtilisateur(user)"
+                  [title]="user.actif ? 'Désactiver' : 'Activer'">
+                  {{ user.actif ? '🚫' : '✅' }}
+                </button>
+                <button 
+                  class="btn btn-danger btn-sm" 
+                  (click)="supprimerUtilisateur(user)"
+                  *ngIf="user.role !== 'ADMIN'">
+                  🗑️
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div *ngIf="getUtilisateursFiltres().length === 0" class="empty-state">
+          <p>Aucun utilisateur trouvé</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet Rendez-vous -->
+    <div *ngIf="activeTab === 'rendezvous'" class="tab-pane">
+      <div class="section-header">
+        <h2>Gestion des Rendez-vous</h2>
+        <p>Vue d'ensemble de tous les rendez-vous de la plateforme</p>
+      </div>
+      <div class="coming-soon">
+        <div class="coming-soon-icon">📅</div>
+        <h3>Module en développement</h3>
+        <p>La gestion avancée des rendez-vous sera disponible prochainement</p>
+      </div>
+    </div>
+
+    <!-- Onglet Rapports -->
+    <div *ngIf="activeTab === 'rapports'" class="tab-pane">
+      <div class="section-header">
+        <h2>Rapports et Statistiques</h2>
+        <p>Analyse détaillée des performances de la plateforme</p>
+      </div>
+      <div class="coming-soon">
+        <div class="coming-soon-icon">📈</div>
+        <h3>Module en développement</h3>
+        <p>Les rapports détaillés seront disponibles prochainement</p>
+      </div>
+    </div>
+
+    <!-- Onglet Paramètres -->
+    <div *ngIf="activeTab === 'parametres'" class="tab-pane">
+      <div class="section-header">
+        <h2>Paramètres de la Plateforme</h2>
+        <p>Configuration générale du système</p>
+      </div>
+      <div class="coming-soon">
+        <div class="coming-soon-icon">⚙️</div>
+        <h3>Module en développement</h3>
+        <p>Les paramètres système seront disponibles prochainement</p>
+      </div>
+    </div>
+  </div>
+</div>

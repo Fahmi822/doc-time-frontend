@@ -1,1 +1,116 @@
-<p>patient-dashboard works!</p>
+<div class="patient-dashboard">
+  <div class="dashboard-header">
+    <h1>Tableau de Bord Patient</h1>
+    <p>Gérez vos rendez-vous médicaux</p>
+  </div>
+
+  <!-- Navigation par onglets -->
+  <div class="tabs-navigation">
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'rendez-vous'"
+      (click)="setActiveTab('rendez-vous')">
+      Mes Rendez-vous
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'docteurs'"
+      (click)="setActiveTab('docteurs')">
+      Trouver un Docteur
+    </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'profil'"
+      (click)="setActiveTab('profil')">
+      Mon Profil
+    </button>
+  </div>
+
+  <!-- Contenu des onglets -->
+  <div class="tab-content">
+    
+    <!-- Onglet Mes Rendez-vous -->
+    <div *ngIf="activeTab === 'rendez-vous'" class="tab-pane">
+      <div class="section-header">
+        <h2>Mes Rendez-vous</h2>
+        <button class="btn btn-primary" (click)="prendreRendezVous()">
+          Prendre un Rendez-vous
+        </button>
+      </div>
+
+      <div *ngIf="isLoading" class="loading">Chargement...</div>
+
+      <div *ngIf="!isLoading && rendezVous.length === 0" class="empty-state">
+        <p>Aucun rendez-vous planifié</p>
+        <button class="btn btn-primary" (click)="prendreRendezVous()">
+          Prendre mon premier rendez-vous
+        </button>
+      </div>
+
+      <div *ngIf="!isLoading && rendezVous.length > 0" class="rendez-vous-list">
+        <div *ngFor="let rdv of rendezVous" class="rendez-vous-card">
+          <div class="rdv-header">
+            <h3>Dr. {{ rdv.docteur.nom }} {{ rdv.docteur.prenom }}</h3>
+            <span class="badge" [class]="getStatutBadgeClass(rdv.statut)">
+              {{ rdv.statut | lowercase }}
+            </span>
+          </div>
+          
+          <div class="rdv-details">
+            <p><strong>Date:</strong> {{ rdv.dateHeure | date:'dd/MM/yyyy à HH:mm' }}</p>
+            <p><strong>Motif:</strong> {{ rdv.motif }}</p>
+            <p><strong>Spécialité:</strong> {{ rdv.docteur.specialite?.titre }}</p>
+          </div>
+
+          <div class="rdv-actions" *ngIf="rdv.statut === 'PLANIFIE'">
+            <button class="btn btn-success btn-sm" (click)="confirmerRendezVous(rdv.id)">
+              Confirmer
+            </button>
+            <button class="btn btn-danger btn-sm" (click)="annulerRendezVous(rdv.id)">
+              Annuler
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet Trouver un Docteur -->
+    <div *ngIf="activeTab === 'docteurs'" class="tab-pane">
+      <div class="section-header">
+        <h2>Trouver un Docteur</h2>
+        <div class="search-box">
+          <input type="text" placeholder="Rechercher un docteur..." class="search-input">
+        </div>
+      </div>
+
+      <div class="docteurs-grid">
+        <div *ngFor="let docteur of docteurs" class="docteur-card">
+          <div class="docteur-photo">
+            <img [src]="docteur.photo || 'assets/default-avatar.png'" [alt]="docteur.prenom + ' ' + docteur.nom">
+          </div>
+          <div class="docteur-info">
+            <h3>Dr. {{ docteur.nom }} {{ docteur.prenom }}</h3>
+            <p class="specialite">{{ docteur.specialite?.titre }}</p>
+            <p class="experience">{{ docteur.anneesExperience }} ans d'expérience</p>
+            <div class="rating">
+              <span class="stars">⭐ {{ docteur.noteMoyenne | number:'1.1-1' }}</span>
+              <span class="reviews">({{ docteur.nombreAvis }} avis)</span>
+            </div>
+            <p class="tarif">{{ docteur.tarifConsultation }} €</p>
+          </div>
+          <div class="docteur-actions">
+            <!-- <button class="btn btn-primary" (click)="prendreRendezVousAvecDocteur(docteur.id)">
+              Prendre RDV
+            </button>-->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet Mon Profil -->
+    <div *ngIf="activeTab === 'profil'" class="tab-pane">
+      <h2>Mon Profil</h2>
+      <p>Fonctionnalité en cours de développement...</p>
+    </div>
+  </div>
+</div>

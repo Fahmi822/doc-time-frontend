@@ -1,12 +1,3 @@
-export interface User {
-  id?: number;
-  nom: string;
-  prenom: string;
-  email: string;
-  motDePasse?: string;
-  role: string;
-}
-
 export interface LoginRequest {
   email: string;
   motDePasse: string;

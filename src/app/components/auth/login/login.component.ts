@@ -34,15 +34,30 @@ export class LoginComponent {
 
       this.authService.login(this.loginForm.value).subscribe({
         next: (response) => {
+          console.log('Login réussi:', response);
           this.isLoading = false;
           this.redirectBasedOnRole(response.role);
         },
         error: (error) => {
-          this.errorMessage = error.error?.message || 'Erreur de connexion';
+          console.error('Erreur login:', error);
           this.isLoading = false;
-          console.error('Erreur détaillée:', error);
+          
+          // Gestion détaillée des erreurs
+          if (error.error) {
+            if (typeof error.error === 'string') {
+              this.errorMessage = error.error;
+            } else if (error.error.message) {
+              this.errorMessage = error.error.message;
+            } else {
+              this.errorMessage = 'Email ou mot de passe incorrect';
+            }
+          } else {
+            this.errorMessage = 'Erreur de connexion au serveur';
+          }
         }
       });
+    } else {
+      this.errorMessage = 'Veuillez remplir tous les champs correctement';
     }
   }
 
