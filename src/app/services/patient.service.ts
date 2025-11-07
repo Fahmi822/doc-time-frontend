@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../environments/environment';
+import { catchError, throwError } from 'rxjs';
 
 export interface RendezVous {
   id: number;
@@ -13,6 +14,10 @@ export interface RendezVous {
   dateModification: string;
   patient: any;
   docteur: any;
+}
+export interface CreneauxDisponiblesResponse {
+  message: string;
+  creneauxDisponibles: string[];
 }
 
 export interface Docteur {
@@ -29,6 +34,7 @@ export interface Docteur {
   photo?: string;
 }
 
+// Export the interface properly
 export interface CreateRendezVousRequest {
   dateHeure: string;
   motif: string;
@@ -44,15 +50,41 @@ export class PatientService {
 
   constructor(private http: HttpClient) {}
 
+  verifierDisponibilite(docteurId: number, dateHeure: string): Observable<boolean> {
+    return this.http.get<boolean>(
+      `${this.apiUrl}/disponibilites/docteur/${docteurId}/disponible?dateHeure=${dateHeure}`
+    );
+  }
+  getCreneauxDisponibles(docteurId: number, dateDebut: string, dateFin: string): Observable<string[]> {
+    return this.http.get<string[]>(
+      `${this.apiUrl}/disponibilites/docteur/${docteurId}/creneaux?dateDebut=${dateDebut}&dateFin=${dateFin}`
+    );
+  }
+
+  // Prendre rendez-vous avec gestion d'erreur améliorée
+  prendreRendezVous(request: CreateRendezVousRequest): Observable<RendezVous> {
+    return this.http.post<RendezVous>(`${this.apiUrl}/rendezvous`, request)
+      .pipe(
+        catchError((error) => {
+          if (error.error?.creneauxDisponibles) {
+            // Transformer l'erreur en une erreur avec les créneaux disponibles
+            return throwError(() => ({
+              type: 'DOCTEUR_NON_DISPONIBLE',
+              message: error.error.message,
+              creneauxDisponibles: error.error.creneauxDisponibles
+            }));
+          }
+          return throwError(() => error);
+        })
+      );
+  }
+
   // Rendez-vous
   getMesRendezVous(patientId: number): Observable<RendezVous[]> {
     return this.http.get<RendezVous[]>(`${this.apiUrl}/rendezvous/patient/${patientId}`);
   }
 
-  prendreRendezVous(request: CreateRendezVousRequest): Observable<RendezVous> {
-    return this.http.post<RendezVous>(`${this.apiUrl}/rendezvous`, request);
-  }
-
+  
   annulerRendezVous(rendezVousId: number, patientId: number): Observable<RendezVous> {
     return this.http.put<RendezVous>(`${this.apiUrl}/rendezvous/${rendezVousId}/annuler?patientId=${patientId}`, {});
   }

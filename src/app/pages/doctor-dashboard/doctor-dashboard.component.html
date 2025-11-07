@@ -1,7 +1,52 @@
-<div class="doctor-dashboard">
+<div class="dashboard-container">
   <div class="dashboard-header">
-    <h1>Tableau de Bord Docteur</h1>
-    <p>Gérez votre cabinet et vos rendez-vous</p>
+    <div class="header-content">
+      <div class="header-info">
+        <h1>Tableau de Bord Docteur</h1>
+        <p>Gérez votre cabinet et vos rendez-vous</p>
+      </div>
+      <div class="header-profile">
+        <div class="profile-menu">
+          <div class="profile-avatar" (click)="toggleProfileMenu()">
+            <div class="avatar-image" *ngIf="monProfil?.photo">
+              <img [src]="getSafePhotoUrl()" 
+                   alt="Photo de profil"
+                   (error)="onPhotoError($event)">
+            </div>
+            <div class="avatar-placeholder" 
+                 *ngIf="!monProfil?.photo">
+              {{ getInitials() }}
+            </div>
+            <span class="profile-name">
+              Dr. {{ monProfil?.prenom }} {{ monProfil?.nom }}
+            </span>
+            <span class="dropdown-arrow">▼</span>
+          </div>
+          
+          <div class="profile-dropdown" *ngIf="showProfileMenu">
+            <div class="dropdown-item" (click)="ouvrirModalProfil()">
+              <span class="icon">👤</span>
+              Modifier mon profil
+            </div>
+            <div class="dropdown-item" (click)="deconnexion()">
+              <span class="icon">🚪</span>
+              Déconnexion
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gestion des erreurs -->
+  <div *ngIf="hasConnectionError" class="error-banner">
+    <div class="error-content">
+      <span class="error-icon">⚠️</span>
+      <span class="error-message">{{ errorMessage }}</span>
+      <button class="btn btn-outline-light btn-sm" (click)="retryLoad()">
+        Réessayer
+      </button>
+    </div>
   </div>
 
   <!-- Statistiques -->
@@ -40,26 +85,26 @@
   <div class="tabs-navigation">
     <button 
       class="tab-btn" 
-      [class.active]="activeTab === 'aujourdhui'"
-      (click)="setActiveTab('aujourdhui')">
+      [class.active]="activeTab === DashboardTabs.AUJOURDHUI"
+      (click)="setActiveTab(DashboardTabs.AUJOURDHUI)">
       Aujourd'hui
     </button>
     <button 
       class="tab-btn" 
-      [class.active]="activeTab === 'tous'"
-      (click)="setActiveTab('tous')">
+      [class.active]="activeTab === DashboardTabs.TOUS"
+      (click)="setActiveTab(DashboardTabs.TOUS)">
       Tous les RDV
     </button>
     <button 
       class="tab-btn" 
-      [class.active]="activeTab === 'disponibilites'"
-      (click)="setActiveTab('disponibilites')">
+      [class.active]="activeTab === DashboardTabs.DISPONIBILITES"
+      (click)="setActiveTab(DashboardTabs.DISPONIBILITES)">
       Mes Disponibilités
     </button>
     <button 
       class="tab-btn" 
-      [class.active]="activeTab === 'patients'"
-      (click)="setActiveTab('patients')">
+      [class.active]="activeTab === DashboardTabs.PATIENTS"
+      (click)="setActiveTab(DashboardTabs.PATIENTS)">
       Mes Patients
     </button>
   </div>
@@ -68,16 +113,21 @@
   <div class="tab-content">
     
     <!-- Onglet Aujourd'hui -->
-    <div *ngIf="activeTab === 'aujourdhui'" class="tab-pane">
+    <div *ngIf="activeTab === DashboardTabs.AUJOURDHUI" class="tab-pane">
       <div class="section-header">
         <h2>Rendez-vous d'Aujourd'hui</h2>
-        <!-- <p class="date-info">{{ getDateFormatee(new Date().toISOString()) }}</p>-->
+        <p class="date-info">{{ todayDate }}</p>
       </div>
 
-      <div *ngIf="isLoading" class="loading">Chargement...</div>
+      <div *ngIf="isLoading" class="loading">
+        <div class="spinner"></div>
+        <p>Chargement des rendez-vous...</p>
+      </div>
 
       <div *ngIf="!isLoading && rendezVousAujourdhui.length === 0" class="empty-state">
+        <div class="empty-icon">📅</div>
         <p>Aucun rendez-vous prévu pour aujourd'hui</p>
+        <small>Profitez-en pour planifier vos tâches !</small>
       </div>
 
       <div *ngIf="!isLoading && rendezVousAujourdhui.length > 0" class="rendez-vous-list">
@@ -124,20 +174,32 @@
     </div>
 
     <!-- Onglet Tous les RDV -->
-    <div *ngIf="activeTab === 'tous'" class="tab-pane">
+    <div *ngIf="activeTab === DashboardTabs.TOUS" class="tab-pane">
       <div class="section-header">
         <h2>Tous mes Rendez-vous</h2>
+        <div class="header-actions">
+          <button class="btn btn-outline" (click)="loadDonnees()" [disabled]="isLoading">
+            🔄 Actualiser
+          </button>
+        </div>
       </div>
 
-      <div class="rendez-vous-list">
-        <div *ngFor="let rdv of rendezVous" class="rendez-vous-card">
+      <div *ngIf="rendezVous.length === 0" class="empty-state">
+        <div class="empty-icon">📋</div>
+        <p>Aucun rendez-vous planifié</p>
+        <small>Les rendez-vous apparaîtront ici une fois pris par vos patients</small>
+      </div>
+
+      <div *ngIf="rendezVous.length > 0" class="rendez-vous-list">
+        <div *ngFor="let rdv of rendezVous" class="rendez-vous-card" [class.past]="estRendezVousPasse(rdv.dateHeure)">
           <div class="rdv-header">
             <div class="patient-info">
               <h3>{{ rdv.patient.prenom }} {{ rdv.patient.nom }}</h3>
               <p class="patient-contact">{{ rdv.patient.email }}</p>
+              <p class="patient-contact">{{ rdv.patient.telephone || 'Tél. non renseigné' }}</p>
             </div>
             <div class="rdv-time">
-              <span class="date-time">{{ rdv.dateHeure | date:'dd/MM/yyyy à HH:mm' }}</span>
+              <span class="date-time">{{ getDateFormatee(rdv.dateHeure) }} à {{ getHeureFromDate(rdv.dateHeure) }}</span>
               <span class="badge" [class]="getStatutBadgeClass(rdv.statut)">
                 {{ rdv.statut | lowercase }}
               </span>
@@ -146,6 +208,11 @@
           
           <div class="rdv-details">
             <p><strong>Motif:</strong> {{ rdv.motif }}</p>
+            <p *ngIf="rdv.patient.dateNaissance"><strong>Âge:</strong> {{ calculerAge(rdv.patient.dateNaissance) }} ans</p>
+          </div>
+
+          <div class="rdv-notes" *ngIf="rdv.notes">
+            <strong>Notes:</strong> {{ rdv.notes }}
           </div>
 
           <div class="rdv-actions" *ngIf="rdv.statut !== 'TERMINE' && rdv.statut !== 'ANNULE'">
@@ -158,49 +225,75 @@
             <button class="btn btn-danger btn-sm" (click)="annulerRendezVous(rdv.id)">
               Annuler
             </button>
+            <button class="btn btn-outline btn-sm" (click)="ouvrirModalNotes(rdv)">
+              Notes
+            </button>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Onglet Disponibilités -->
-    <div *ngIf="activeTab === 'disponibilites'" class="tab-pane">
+    <div *ngIf="activeTab === DashboardTabs.DISPONIBILITES" class="tab-pane">
       <div class="section-header">
         <h2>Mes Disponibilités</h2>
-        <button class="btn btn-primary" (click)="ouvrirModalDisponibilite()">
-          + Ajouter Disponibilité
-        </button>
+        <div class="header-actions">
+          <button class="btn btn-primary" (click)="ouvrirModalDisponibilite()">
+            + Ajouter Disponibilité
+          </button>
+          <button class="btn btn-outline" (click)="ouvrirModalGenererSemaine()">
+            📅 Générer Semaine
+          </button>
+        </div>
       </div>
 
       <div *ngIf="disponibilites.length === 0" class="empty-state">
+        <div class="empty-icon">⏰</div>
         <p>Aucune disponibilité planifiée</p>
+        <small>Ajoutez vos disponibilités pour que les patients puissent prendre rendez-vous</small>
       </div>
 
       <div *ngIf="disponibilites.length > 0" class="disponibilites-list">
         <div *ngFor="let dispo of disponibilites" class="disponibilite-card">
           <div class="dispo-info">
-            <h4>{{ dispo.dateHeureDebut | date:'EEEE dd/MM/yyyy' }}</h4>
+            <h4>{{ getDateFormatee(dispo.dateHeureDebut) }}</h4>
             <p class="dispo-horaire">
-              De {{ dispo.dateHeureDebut | date:'HH:mm' }} à {{ dispo.dateHeureFin | date:'HH:mm' }}
+              De {{ getHeureFromDate(dispo.dateHeureDebut) }} à {{ getHeureFromDate(dispo.dateHeureFin) }}
+            </p>
+            <p *ngIf="dispo.motifIndisponibilite" class="dispo-motif">
+              <strong>Motif:</strong> {{ dispo.motifIndisponibilite }}
             </p>
           </div>
-          <div class="dispo-status" [class.disponible]="dispo.disponible" [class.indisponible]="!dispo.disponible">
-            {{ dispo.disponible ? 'Disponible' : 'Indisponible' }}
+          <div class="dispo-actions">
+            <div class="dispo-status" [class.disponible]="dispo.disponible" [class.indisponible]="!dispo.disponible">
+              {{ dispo.disponible ? 'Disponible' : 'Indisponible' }}
+            </div>
+            <button class="btn btn-danger btn-sm" (click)="supprimerDisponibilite(dispo.id)">
+              Supprimer
+            </button>
           </div>
-          <button class="btn btn-danger btn-sm" (click)="supprimerDisponibilite(dispo.id)">
-            Supprimer
-          </button>
         </div>
       </div>
     </div>
 
     <!-- Onglet Patients -->
-    <div *ngIf="activeTab === 'patients'" class="tab-pane">
+    <div *ngIf="activeTab === DashboardTabs.PATIENTS" class="tab-pane">
       <div class="section-header">
         <h2>Mes Patients</h2>
+        <div class="header-actions">
+          <button class="btn btn-outline" (click)="loadDonnees()" [disabled]="isLoading">
+            🔄 Actualiser
+          </button>
+        </div>
       </div>
 
-      <div class="patients-list">
+      <div *ngIf="getPatientsUniques().length === 0" class="empty-state">
+        <div class="empty-icon">👥</div>
+        <p>Aucun patient pour le moment</p>
+        <small>Vos patients apparaîtront ici après leur premier rendez-vous</small>
+      </div>
+
+      <div *ngIf="getPatientsUniques().length > 0" class="patients-list">
         <div *ngFor="let rdv of getPatientsUniques()" class="patient-card">
           <div class="patient-avatar">
             {{ rdv.patient.prenom.charAt(0) }}{{ rdv.patient.nom.charAt(0) }}
@@ -212,11 +305,296 @@
             <p *ngIf="rdv.patient.dateNaissance" class="patient-age">
               {{ calculerAge(rdv.patient.dateNaissance) }} ans
             </p>
+            <p *ngIf="rdv.patient.antecedentsMedicaux" class="patient-antecedents">
+              <strong>Antécédents:</strong> {{ rdv.patient.antecedentsMedicaux }}
+            </p>
           </div>
           <div class="patient-stats">
             <span class="stat">Dernier RDV: {{ getDernierRendezVous(rdv.patient.id) | date:'dd/MM/yyyy' }}</span>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Profil Docteur -->
+  <div *ngIf="showModalProfil" class="modal-overlay">
+    <div class="modal large-modal">
+      <div class="modal-header">
+        <h3>Modifier mon Profil</h3>
+        <button class="close-btn" (click)="fermerModalProfil()">×</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Photo de profil -->
+        <div class="photo-section">
+          <div class="photo-upload">
+            <div class="photo-preview" *ngIf="photoPreview">
+              <img [src]="photoPreview" alt="Photo de profil">
+              <button class="btn-remove-photo" (click)="supprimerPhoto()">×</button>
+            </div>
+            <div class="photo-placeholder" *ngIf="!photoPreview">
+              <div class="placeholder-icon">👤</div>
+              <p>Aucune photo</p>
+            </div>
+            <div class="photo-actions">
+              <input 
+                type="file" 
+                id="photoInput"
+                accept="image/*"
+                (change)="onPhotoSelected($event)"
+                style="display: none;">
+              <label for="photoInput" class="btn btn-outline btn-sm">
+                📷 Choisir une photo
+              </label>
+              <small>Formats: JPG, PNG • Max: 5MB</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Informations personnelles -->
+        <div class="form-section">
+          <h4>Informations Personnelles</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nom *</label>
+              <input 
+                type="text" 
+                [(ngModel)]="profilForm.nom"
+                class="form-control"
+                placeholder="Votre nom"
+                required>
+            </div>
+            <div class="form-group">
+              <label>Prénom *</label>
+              <input 
+                type="text" 
+                [(ngModel)]="profilForm.prenom"
+                class="form-control"
+                placeholder="Votre prénom"
+                required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Téléphone</label>
+              <input 
+                type="tel" 
+                [(ngModel)]="profilForm.telephone"
+                class="form-control"
+                placeholder="+33 1 23 45 67 89">
+            </div>
+            <div class="form-group">
+              <label>Langue</label>
+              <select [(ngModel)]="profilForm.langue" class="form-control">
+                <option value="fr">Français</option>
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="de">Deutsch</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Adresse</label>
+            <textarea 
+              [(ngModel)]="profilForm.adresse"
+              class="form-control"
+              rows="2"
+              placeholder="Adresse complète de votre cabinet"></textarea>
+          </div>
+        </div>
+
+        <!-- Informations professionnelles -->
+        <div class="form-section">
+          <h4>Informations Professionnelles</h4>
+          
+          <div class="form-group">
+            <label>Spécialité Médicale *</label>
+            <select 
+              [(ngModel)]="profilForm.specialite" 
+              class="form-control" 
+              required
+              [class.is-invalid]="!profilForm.specialite">
+              <option value="">Choisissez votre spécialité</option>
+              <option 
+                *ngFor="let spec of specialites" 
+                [value]="spec.id">
+                {{ spec.titre }}
+              </option>
+            </select>
+            <div class="invalid-feedback" *ngIf="!profilForm.specialite">
+              Veuillez sélectionner une spécialité
+            </div>
+            
+            <div *ngIf="profilForm.specialite" class="specialite-description">
+              <small class="text-muted">
+                {{ getDescriptionSpecialite(profilForm.specialite) }}
+              </small>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Numéro de Licence *</label>
+              <input 
+                type="text" 
+                [(ngModel)]="profilForm.numeroLicence"
+                class="form-control"
+                required
+                placeholder="Ex: LM123456"
+                maxlength="20">
+            </div>
+            <div class="form-group">
+              <label>Années d'expérience</label>
+              <input 
+                type="number" 
+                [(ngModel)]="profilForm.anneesExperience"
+                class="form-control"
+                min="0"
+                max="50"
+                placeholder="0">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Tarif Consultation (€) *</label>
+            <div class="input-group">
+              <input 
+                type="number" 
+                [(ngModel)]="profilForm.tarifConsultation"
+                class="form-control"
+                min="1"
+                step="0.5"
+                required
+                placeholder="50.00">
+              <span class="input-group-text">€</span>
+            </div>
+            <small class="text-muted">Tarif standard pour une consultation de 30 minutes</small>
+          </div>
+        </div>
+
+        <!-- Statistiques (lecture seule) -->
+        <div *ngIf="monProfil" class="form-section stats-section">
+          <h4>Statistiques</h4>
+          <div class="stats-grid-mini">
+            <div class="stat-mini">
+              <span class="stat-label">Note moyenne</span>
+              <span class="stat-value">⭐ {{ monProfil.noteMoyenne || '0.0' }}/5</span>
+            </div>
+            <div class="stat-mini">
+              <span class="stat-label">Nombre d'avis</span>
+              <span class="stat-value">{{ monProfil.nombreAvis || 0 }}</span>
+            </div>
+            <div class="stat-mini">
+              <span class="stat-label">Membre depuis</span>
+              <span class="stat-value">{{ monProfil.dateCreation | date:'dd/MM/yyyy' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="fermerModalProfil()">Annuler</button>
+        <button class="btn btn-primary" (click)="mettreAJourProfil()">Enregistrer les modifications</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ajouter Disponibilité -->
+  <div *ngIf="showModalDisponibilite" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Ajouter une Disponibilité</h3>
+        <button class="close-btn" (click)="fermerModalDisponibilite()">×</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Type</label>
+          <select [(ngModel)]="nouvelleDisponibilite.type" class="form-control">
+            <option value="disponible">Disponible</option>
+            <option value="indisponible">Indisponible</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date de début</label>
+            <input 
+              type="date" 
+              [(ngModel)]="nouvelleDisponibilite.dateDebut"
+              [min]="minDate"
+              class="form-control">
+          </div>
+          
+          <div class="form-group">
+            <label>Heure de début</label>
+            <select [(ngModel)]="nouvelleDisponibilite.heureDebut" class="form-control">
+              <option *ngFor="let heure of genererHeures()" [value]="heure">{{ heure }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date de fin</label>
+            <input 
+              type="date" 
+              [(ngModel)]="nouvelleDisponibilite.dateFin"
+              [min]="nouvelleDisponibilite.dateDebut || minDate"
+              class="form-control">
+          </div>
+          
+          <div class="form-group">
+            <label>Heure de fin</label>
+            <select [(ngModel)]="nouvelleDisponibilite.heureFin" class="form-control">
+              <option *ngFor="let heure of genererHeures()" [value]="heure">{{ heure }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div *ngIf="nouvelleDisponibilite.type === 'indisponible'" class="form-group">
+          <label>Motif d'indisponibilité</label>
+            <input 
+              type="text" 
+              [(ngModel)]="nouvelleDisponibilite.motif"
+              placeholder="Congés, formation, etc."
+              class="form-control">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="fermerModalDisponibilite()">Annuler</button>
+        <button class="btn btn-primary" (click)="ajouterDisponibilite()">Confirmer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Générer Semaine -->
+  <div *ngIf="showModalGenererSemaine" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Générer les Disponibilités de la Semaine</h3>
+        <button class="close-btn" (click)="fermerModalDisponibilite()">×</button>
+      </div>
+      
+      <div class="modal-body">
+        <p>Cette action va générer vos disponibilités pour la semaine du lundi au vendredi :</p>
+        <ul>
+          <li>Matin : 9h00 - 12h00</li>
+          <li>Après-midi : 14h00 - 18h00</li>
+        </ul>
+        <p><strong>Semaine du :</strong> {{ lundiProchain | date:'dd/MM/yyyy' }}</p>
+        <div class="alert alert-info">
+          <small>⚠️ Les disponibilités existantes pour cette période seront remplacées</small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="fermerModalDisponibilite()">Annuler</button>
+        <button class="btn btn-primary" (click)="genererSemaineDisponibilites()">Générer</button>
       </div>
     </div>
   </div>

@@ -1,104 +1,305 @@
-.simple-header {
-  background: #2563eb;
-  color: white;
-  padding: 1rem 2rem;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+/* ==================== VARIABLES ==================== */
+:host {
+  --primary-color: #3498db;
+  --primary-dark: #2980b9;
+  --secondary-color: #2ecc71;
+  --danger-color: #e74c3c;
+  --light-color: #ecf0f1;
+  --dark-color: #2c3e50;
+  --gray-color: #95a5a6;
+  --border-color: #bdc3c7;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --border-radius: 8px;
+  --transition: all 0.3s ease;
 }
 
-.header-content {
+/* ==================== HEADER PRINCIPAL ==================== */
+.main-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-color);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  box-shadow: var(--shadow);
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: bold;
-  font-size: 1.2rem;
+.brand-section {
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.brand-section:hover {
+  transform: translateY(-1px);
 }
 
 .logo {
-  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.user-actions {
+.logo-icon {
+  font-size: 2rem;
+}
+
+.app-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--dark-color);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.navigation {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.nav-link {
+  color: var(--dark-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition);
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+}
+
+.nav-link:hover {
+  color: var(--primary-color);
+  background: rgba(52, 152, 219, 0.1);
+}
+
+.user-section {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
 
-.logout-btn {
-  background: rgba(255,255,255,0.2);
-  color: white;
-  border: 1px solid white;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.welcome-text {
+  color: var(--dark-color);
+  font-weight: 500;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* ==================== BOUTONS ==================== */
+.btn {
+  padding: 0.5rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius);
+  font-weight: 500;
   cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.logout-btn:hover {
-  background: white;
-  color: #2563eb;
-}
-
-.auth-btn {
-  color: white;
+  transition: var(--transition);
   text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  border: 1px solid white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   font-size: 0.9rem;
 }
 
-.auth-btn.primary {
-  background: white;
-  color: #2563eb;
-}
-
-.auth-btn:hover {
-  background: white;
-  color: #2563eb;
-}
-
-.simple-footer {
-  background: #1f2937;
+.btn-primary {
+  background: var(--primary-color);
   color: white;
-  text-align: center;
-  padding: 1.5rem;
-  margin-top: auto;
 }
 
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--gray-color);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #7f8c8d;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+}
+
+.btn-outline:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-sm {
+  padding: 0.375rem 1rem;
+  font-size: 0.8rem;
+}
+
+/* ==================== MAIN CONTENT ==================== */
 main {
-  min-height: calc(100vh - 140px);
+  min-height: 100vh;
 }
 
 main.with-header {
-  min-height: calc(100vh - 80px);
+  padding-top: 80px; /* Hauteur du header */
 }
 
 main.with-footer {
-  min-height: calc(100vh - 200px);
+  padding-bottom: 100px; /* Hauteur du footer */
 }
 
-/* Responsive */
+/* Classes spécifiques aux rôles */
+main.doctor {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+main.patient {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+main.admin {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+/* ==================== FOOTER PRINCIPAL ==================== */
+.main-footer {
+  background: var(--dark-color);
+  color: white;
+  border-top: 1px solid var(--border-color);
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.footer-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 3rem;
+  margin-bottom: 2rem;
+}
+
+.footer-brand .logo {
+  margin-bottom: 1rem;
+}
+
+.footer-brand .app-name {
+  color: white;
+  -webkit-text-fill-color: white;
+}
+
+.footer-description {
+  color: var(--light-color);
+  line-height: 1.6;
+  max-width: 300px;
+}
+
+.footer-links {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+.link-group h4 {
+  color: white;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.link-group a {
+  display: block;
+  color: var(--light-color);
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+  transition: var(--transition);
+}
+
+.link-group a:hover {
+  color: var(--primary-color);
+}
+
+.footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1.5rem;
+  text-align: center;
+  color: var(--light-color);
+}
+
+/* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
-  .simple-header {
+  .header-container {
     padding: 1rem;
-  }
-  
-  .header-content {
     flex-direction: column;
     gap: 1rem;
+  }
+  
+  .navigation {
+    gap: 1rem;
+  }
+  
+  .user-section {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .user-info {
+    flex-direction: column;
     text-align: center;
   }
   
-  .user-actions {
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .footer-links {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  main.with-header {
+    padding-top: 140px; /* Header plus grand sur mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-buttons {
     flex-direction: column;
-    gap: 0.5rem;
+    width: 100%;
+  }
+  
+  .auth-buttons .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .navigation {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }

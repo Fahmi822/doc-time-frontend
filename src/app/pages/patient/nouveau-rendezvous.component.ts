@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { PatientService, Docteur } from '../../services/patient.service';
+import { PatientService, Docteur, CreateRendezVousRequest } from '../../services/patient.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -22,6 +22,9 @@ export class NouveauRendezVousComponent implements OnInit {
   selectedDocteurId: number | null = null;
   patientId: number | null = null;
 
+  disponibiliteError: string = '';
+  creneauxSuggerees: string[] = [];
+
   constructor(
     private fb: FormBuilder,
     private patientService: PatientService,
@@ -39,7 +42,7 @@ export class NouveauRendezVousComponent implements OnInit {
 
   ngOnInit(): void {
     this.patientId = this.authService.getUserId();
-    
+
     if (!this.patientId) {
       alert('Erreur: Utilisateur non connecté');
       this.router.navigate(['/login']);
@@ -47,8 +50,14 @@ export class NouveauRendezVousComponent implements OnInit {
     }
 
     this.loadDocteurs();
-    
-    // Vérifier si un docteur est pré-sélectionné via les paramètres de requête
+
+    // Détection du changement de date pour générer les créneaux correspondants
+    this.rendezVousForm.get('date')?.valueChanges.subscribe((selectedDate) => {
+      if (selectedDate && this.selectedDocteur) {
+        this.genererAvailableSlotsPourDate(selectedDate);
+      }
+    });
+
     this.route.queryParams.subscribe(params => {
       if (params['docteurId']) {
         this.selectedDocteurId = +params['docteurId'];
@@ -57,15 +66,137 @@ export class NouveauRendezVousComponent implements OnInit {
     });
   }
 
+  onDocteurSelect(docteur: Docteur): void {
+    this.selectedDocteur = docteur;
+    this.rendezVousForm.patchValue({ docteurId: docteur.id });
+    this.availableSlots = []; // Réinitialise avant la date
+    this.disponibiliteError = '';
+    this.creneauxSuggerees = [];
+  }
+
+  async genererAvailableSlotsPourDate(dateChoisie: string): Promise<void> {
+    if (!this.selectedDocteur) return;
+
+    try {
+      const dateDebut = new Date(dateChoisie);
+      const dateFin = new Date(dateChoisie);
+      dateFin.setHours(23, 59, 59, 999);
+
+      const creneaux = await this.patientService
+        .getCreneauxDisponibles(this.selectedDocteur.id, dateDebut.toISOString(), dateFin.toISOString())
+        .toPromise();
+
+      this.availableSlots = (creneaux && creneaux.length > 0)
+        ? this.formaterCreneaux(creneaux)
+        : this.genererSlotsParDefaut();
+    } catch (error) {
+      console.error('Erreur chargement créneaux:', error);
+      this.availableSlots = this.genererSlotsParDefaut();
+    }
+  }
+
+  formaterCreneaux(creneaux: string[]): string[] {
+    return creneaux.map(creneau => {
+      const date = new Date(creneau);
+      return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    });
+  }
+
+  genererSlotsParDefaut(): string[] {
+    return [
+      '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+      '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'
+    ];
+  }
+
+  async onSubmit(): Promise<void> {
+    if (this.rendezVousForm.valid && this.patientId) {
+      this.isLoading = true;
+      this.disponibiliteError = '';
+      this.creneauxSuggerees = [];
+
+      const formValue = this.rendezVousForm.value;
+      const dateTime = new Date(formValue.date + 'T' + formValue.heure);
+
+      try {
+        const estDisponible = await this.patientService
+          .verifierDisponibilite(formValue.docteurId, dateTime.toISOString())
+          .toPromise();
+
+        if (!estDisponible) {
+          this.disponibiliteError = 'Ce créneau n\'est plus disponible. Veuillez choisir un autre horaire.';
+          this.suggereNouveauxCreneaux(formValue.docteurId, dateTime);
+          this.isLoading = false;
+          return;
+        }
+
+        const request: CreateRendezVousRequest = {
+          dateHeure: dateTime.toISOString(),
+          motif: formValue.motif,
+          patientId: this.patientId,
+          docteurId: formValue.docteurId
+        };
+
+        this.patientService.prendreRendezVous(request).subscribe({
+          next: () => {
+            this.isLoading = false;
+            
+            // Message de succès avec option de retour
+            if (confirm('Rendez-vous créé avec succès ! Souhaitez-vous retourner à votre tableau de bord ?')) {
+              this.router.navigate(['/patient/dashboard']);
+            } else {
+              // Réinitialiser le formulaire pour un nouveau rendez-vous
+              this.rendezVousForm.reset();
+              this.selectedDocteur = null;
+              this.availableSlots = [];
+            }
+          },
+          error: (error) => {
+            this.isLoading = false;
+            alert('Erreur: ' + (error.error || 'Erreur lors de la création du rendez-vous'));
+          }
+        });
+
+      } catch (error) {
+        this.isLoading = false;
+        this.disponibiliteError = 'Erreur de vérification de disponibilité';
+      }
+    } else {
+      alert('Veuillez remplir tous les champs obligatoires');
+    }
+  }
+
+  async suggereNouveauxCreneaux(docteurId: number, dateTimeOriginal: Date): Promise<void> {
+    try {
+      const dateDebut = new Date(dateTimeOriginal);
+      dateDebut.setHours(0, 0, 0, 0);
+
+      const dateFin = new Date(dateTimeOriginal);
+      dateFin.setDate(dateFin.getDate() + 1);
+
+      const creneaux = await this.patientService
+        .getCreneauxDisponibles(docteurId, dateDebut.toISOString(), dateFin.toISOString())
+        .toPromise();
+
+      this.creneauxSuggerees = this.formaterCreneaux(creneaux || []);
+    } catch (error) {
+      console.error('Erreur suggestion créneaux:', error);
+    }
+  }
+
+  utiliserCreneauSuggere(creneau: string): void {
+    this.rendezVousForm.patchValue({ heure: creneau });
+    this.disponibiliteError = '';
+    this.creneauxSuggerees = [];
+  }
+
   loadDocteurs(): void {
     this.patientService.getAllDocteurs().subscribe({
       next: (docteurs) => {
         this.docteurs = docteurs;
         this.filteredDocteurs = docteurs;
       },
-      error: (error) => {
-        console.error('Erreur chargement docteurs:', error);
-      }
+      error: (error) => console.error('Erreur chargement docteurs:', error)
     });
   }
 
@@ -78,54 +209,10 @@ export class NouveauRendezVousComponent implements OnInit {
     );
   }
 
-  onDocteurSelect(docteur: Docteur): void {
-    this.selectedDocteur = docteur;
-    this.rendezVousForm.patchValue({ docteurId: docteur.id });
-    this.generateAvailableSlots();
-  }
-
   prendreRendezVousAvecDocteur(docteurId: number): void {
     const docteur = this.docteurs.find(d => d.id === docteurId);
     if (docteur) {
       this.onDocteurSelect(docteur);
-    }
-  }
-
-  generateAvailableSlots(): void {
-    // Générer des créneaux disponibles (exemple)
-    this.availableSlots = [
-      '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-      '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'
-    ];
-  }
-
-  onSubmit(): void {
-    if (this.rendezVousForm.valid && this.patientId) {
-      this.isLoading = true;
-      
-      const formValue = this.rendezVousForm.value;
-      const dateTime = new Date(formValue.date + 'T' + formValue.heure);
-
-      const request = {
-        dateHeure: dateTime.toISOString(),
-        motif: formValue.motif,
-        patientId: this.patientId,
-        docteurId: formValue.docteurId
-      };
-
-      this.patientService.prendreRendezVous(request).subscribe({
-        next: (response) => {
-          this.isLoading = false;
-          alert('Rendez-vous créé avec succès !');
-          this.router.navigate(['/patient/dashboard']);
-        },
-        error: (error) => {
-          this.isLoading = false;
-          alert('Erreur: ' + (error.error || 'Erreur lors de la création du rendez-vous'));
-        }
-      });
-    } else {
-      alert('Veuillez remplir tous les champs obligatoires');
     }
   }
 

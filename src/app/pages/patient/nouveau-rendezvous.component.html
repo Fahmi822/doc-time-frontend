@@ -1,7 +1,14 @@
 <div class="nouveau-rendezvous">
-  <div class="header">
-    <h1>Prendre un Rendez-vous</h1>
-    <p>Choisissez un docteur et sélectionnez une date</p>
+  <!-- Header avec bouton de retour -->
+  <div class="header-with-back">
+    <button class="btn-back" (click)="onCancel()" title="Retour au tableau de bord">
+      <span class="back-icon">←</span>
+      Retour
+    </button>
+    <div class="header">
+      <h1>Prendre un Rendez-vous</h1>
+      <p>Choisissez un docteur et sélectionnez une date</p>
+    </div>
   </div>
 
   <form [formGroup]="rendezVousForm" (ngSubmit)="onSubmit()" class="rendezvous-form">
@@ -81,6 +88,27 @@
           </div>
         </div>
       </div>
+
+      <!-- Message d'erreur disponibilité -->
+      <div *ngIf="disponibiliteError" class="alert alert-error">
+        <div class="error-icon">⚠️</div>
+        <div class="error-content">
+          <h4>Créneau non disponible</h4>
+          <p>{{ disponibiliteError }}</p>
+          
+          <div *ngIf="creneauxSuggerees.length > 0" class="suggested-slots">
+            <h5>Créneaux disponibles suggérés :</h5>
+            <div class="suggested-buttons">
+              <button 
+                *ngFor="let creneau of creneauxSuggerees" 
+                class="btn btn-outline btn-sm"
+                (click)="utiliserCreneauSuggere(creneau)">
+                {{ creneau }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Motif de la consultation -->
@@ -112,7 +140,7 @@
     <!-- Actions -->
     <div class="form-actions">
       <button type="button" class="btn btn-secondary" (click)="onCancel()">
-        Annuler
+        Annuler et Retourner
       </button>
       <button 
         type="submit" 

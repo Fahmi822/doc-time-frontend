@@ -1,17 +1,36 @@
-<!-- Header basique -->
-<header *ngIf="shouldShowHeader()" class="simple-header">
-  <div class="header-content">
-    <div class="brand" (click)="goToHome()" style="cursor: pointer;">
-      <span class="logo">⏰</span>
-      <span class="app-name">DocTime</span>
+<<!-- Header principal - seulement sur les pages publiques -->
+<header *ngIf="shouldShowHeader()" class="main-header">
+  <div class="header-container">
+    <div class="brand-section" (click)="goToHome()">
+      <div class="logo">
+        <span class="logo-icon">⏰</span>
+        <span class="app-name">DocTime</span>
+      </div>
     </div>
-    <div class="user-actions" *ngIf="authService.isLoggedIn()">
-      <span>Bonjour! ({{ authService.getRole() | lowercase }})</span>
-      <button class="logout-btn" (click)="logout()">Déconnexion</button>
-    </div>
-    <div class="user-actions" *ngIf="!authService.isLoggedIn() && shouldShowAuthButtons()">
-      <a routerLink="/login" class="auth-btn">Connexion</a>
-      <a routerLink="/signup" class="auth-btn primary">Inscription</a>
+
+    <nav class="navigation" *ngIf="!authService.isLoggedIn()">
+      <a href="#features" class="nav-link">Fonctionnalités</a>
+      <a href="#about" class="nav-link">À propos</a>
+      <a href="#contact" class="nav-link">Contact</a>
+    </nav>
+
+    <div class="user-section">
+      <!-- État connecté - seulement sur page d'accueil -->
+      <div *ngIf="authService.isLoggedIn() && currentRoute === '/'" class="user-info">
+        <span class="welcome-text">Bonjour, {{ getWelcomeText() }}</span>
+        <button class="btn btn-outline btn-sm" (click)="goToHome()">
+          Aller au tableau de bord
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="logout()">
+          Déconnexion
+        </button>
+      </div>
+
+      <!-- État non connecté - seulement sur page d'accueil -->
+      <div *ngIf="!authService.isLoggedIn() && shouldShowAuthButtons()" class="auth-buttons">
+        <a routerLink="/login" class="btn btn-outline">Connexion</a>
+        <a routerLink="/signup" class="btn btn-primary">Inscription</a>
+      </div>
     </div>
   </div>
 </header>
@@ -21,7 +40,45 @@
   <router-outlet></router-outlet>
 </main>
 
-<!-- Footer basique -->
-<footer *ngIf="shouldShowFooter()" class="simple-footer">
-  <p>&copy; 2024 DocTime - Gestion des rendez-vous médicaux</p>
+<!-- Footer principal - seulement sur les pages publiques -->
+<footer *ngIf="shouldShowFooter()" class="main-footer">
+  <div class="footer-container">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <div class="logo">
+          <span class="logo-icon">⏰</span>
+          <span class="app-name">DocTime</span>
+        </div>
+        <p class="footer-description">
+          Plateforme intelligente de gestion des rendez-vous médicaux
+        </p>
+      </div>
+      
+      <div class="footer-links">
+        <div class="link-group">
+          <h4>Navigation</h4>
+          <a href="#features">Fonctionnalités</a>
+          <a href="#about">À propos</a>
+          <a href="#contact">Contact</a>
+        </div>
+        
+        <div class="link-group">
+          <h4>Comptes</h4>
+          <a routerLink="/login">Connexion</a>
+          <a routerLink="/signup">Inscription</a>
+        </div>
+        
+        <div class="link-group">
+          <h4>Légal</h4>
+          <a href="#">Mentions légales</a>
+          <a href="#">Politique de confidentialité</a>
+          <a href="#">CGU</a>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-bottom">
+      <p>&copy; 2024 DocTime. Tous droits réservés.</p>
+    </div>
+  </div>
 </footer>
