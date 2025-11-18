@@ -43,9 +43,6 @@
           <div class="invalid-feedback" *ngIf="signupForm.get('prenom')?.errors?.['required'] && signupForm.get('prenom')?.touched">
             Le prénom est requis
           </div>
-          <div class="invalid-feedback" *ngIf="signupForm.get('prenom')?.errors?.['minlength'] && signupForm.get('prenom')?.touched">
-            Minimum 2 caractères
-          </div>
         </div>
         <div class="form-group">
           <label for="nom">Nom</label>
@@ -59,9 +56,6 @@
           >
           <div class="invalid-feedback" *ngIf="signupForm.get('nom')?.errors?.['required'] && signupForm.get('nom')?.touched">
             Le nom est requis
-          </div>
-          <div class="invalid-feedback" *ngIf="signupForm.get('nom')?.errors?.['minlength'] && signupForm.get('nom')?.touched">
-            Minimum 2 caractères
           </div>
         </div>
       </div>
@@ -115,6 +109,114 @@
           <div class="invalid-feedback" *ngIf="signupForm.errors?.['passwordMismatch'] && signupForm.get('confirmPassword')?.touched">
             Les mots de passe ne correspondent pas
           </div>
+        </div>
+      </div>
+
+      <!-- CHAMPS SPÉCIFIQUES DOCTEUR -->
+      <div *ngIf="isDoctorRole()" class="doctor-fields">
+        <h4>Informations professionnelles</h4>
+        
+        <div class="form-group">
+  <label for="specialiteId" [class.required]="isDoctorRole()">Spécialité médicale</label>
+  <select
+    id="specialiteId"
+    formControlName="specialiteId"
+    class="form-control"
+    [class.is-invalid]="isFieldInvalid('specialiteId')"
+  >
+    <option value="">Sélectionnez votre spécialité</option>
+    <option *ngFor="let specialite of specialites" [value]="specialite.id">
+      {{ specialite.titre }}
+    </option>
+  </select>
+  <div class="invalid-feedback" *ngIf="isFieldInvalid('specialiteId')">
+    La spécialité est obligatoire
+  </div>
+</div>
+
+        <div class="form-group">
+          <label for="numeroLicence">Numéro de licence</label>
+          <input
+            type="text"
+            id="numeroLicence"
+            formControlName="numeroLicence"
+            class="form-control"
+            placeholder="Votre numéro de licence médicale"
+            [class.is-invalid]="signupForm.get('numeroLicence')?.invalid && signupForm.get('numeroLicence')?.touched"
+          >
+          <div class="invalid-feedback" *ngIf="signupForm.get('numeroLicence')?.errors?.['required'] && signupForm.get('numeroLicence')?.touched">
+            Le numéro de licence est obligatoire
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="anneesExperience">Années d'expérience</label>
+            <input
+              type="number"
+              id="anneesExperience"
+              formControlName="anneesExperience"
+              class="form-control"
+              placeholder="0"
+              min="0"
+              [class.is-invalid]="signupForm.get('anneesExperience')?.invalid && signupForm.get('anneesExperience')?.touched"
+            >
+            <div class="invalid-feedback" *ngIf="signupForm.get('anneesExperience')?.errors?.['required'] && signupForm.get('anneesExperience')?.touched">
+              Ce champ est obligatoire
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="tarifConsultation">Tarif consultation (€)</label>
+            <input
+              type="number"
+              id="tarifConsultation"
+              formControlName="tarifConsultation"
+              class="form-control"
+              placeholder="50"
+              min="0"
+              step="0.01"
+              [class.is-invalid]="signupForm.get('tarifConsultation')?.invalid && signupForm.get('tarifConsultation')?.touched"
+            >
+            <div class="invalid-feedback" *ngIf="signupForm.get('tarifConsultation')?.errors?.['required'] && signupForm.get('tarifConsultation')?.touched">
+              Le tarif est obligatoire
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="langue">Langue de consultation</label>
+          <select
+            id="langue"
+            formControlName="langue"
+            class="form-control"
+          >
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="ar">العربية</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="telephone">Téléphone</label>
+          <input
+            type="tel"
+            id="telephone"
+            formControlName="telephone"
+            class="form-control"
+            placeholder="Votre numéro de téléphone"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="adresse">Adresse du cabinet</label>
+          <input
+            type="text"
+            id="adresse"
+            formControlName="adresse"
+            class="form-control"
+            placeholder="Adresse de votre cabinet médical"
+          >
         </div>
       </div>
 

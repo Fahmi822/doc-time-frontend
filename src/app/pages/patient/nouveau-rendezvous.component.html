@@ -1,13 +1,15 @@
 <div class="nouveau-rendezvous">
   <!-- Header avec bouton de retour -->
   <div class="header-with-back">
-    <button class="btn-back" (click)="onCancel()" title="Retour au tableau de bord">
-      <span class="back-icon">←</span>
-      Retour
-    </button>
-    <div class="header">
-      <h1>Prendre un Rendez-vous</h1>
-      <p>Choisissez un docteur et sélectionnez une date</p>
+    <div class="header-content">
+      <button class="btn-back" (click)="onCancel()" title="Retour au tableau de bord">
+        <span class="back-icon">←</span>
+        Retour
+      </button>
+      <div class="header">
+        <h1>Prendre un Rendez-vous</h1>
+        <p>Choisissez un docteur et sélectionnez une date</p>
+      </div>
     </div>
   </div>
 
@@ -15,14 +17,15 @@
     
     <!-- Sélection du docteur -->
     <div class="form-section">
-      <h2>1. Choisir un Docteur</h2>
+      <h2>👨‍⚕️ 1. Choisir un Docteur</h2>
       
       <div class="search-box">
         <input 
           type="text" 
           placeholder="Rechercher un docteur par nom, prénom ou spécialité..."
           class="search-input"
-          (input)="onDocteurSearch($event)">
+          (input)="onDocteurSearch($event)"
+          aria-label="Rechercher un docteur">
       </div>
 
       <div class="docteurs-list">
@@ -33,34 +36,69 @@
           (click)="onDocteurSelect(docteur)">
           
           <div class="docteur-avatar">
-            <img [src]="docteur.photo || 'assets/default-avatar.png'" [alt]="docteur.prenom + ' ' + docteur.nom">
+            <img 
+              [src]="getPhotoUrl(docteur.photo)" 
+              [alt]="getDocteurDisplayName(docteur)"
+              (error)="onPhotoError($event)"
+              class="avatar-image">
           </div>
           
           <div class="docteur-details">
-            <h3>Dr. {{ docteur.nom }} {{ docteur.prenom }}</h3>
+            <h3>{{ getDocteurDisplayName(docteur) }}</h3>
             <p class="specialite">{{ docteur.specialite?.titre }}</p>
-            <p class="experience">{{ docteur.anneesExperience }} ans d'expérience</p>
+            <p class="experience">
+              <span class="experience-icon">📅</span>
+              {{ docteur.anneesExperience || 0 }} ans d'expérience
+            </p>
             <div class="rating">
-              <span class="stars">⭐ {{ docteur.noteMoyenne | number:'1.1-1' }}</span>
-              <span class="reviews">({{ docteur.nombreAvis }} avis)</span>
+              <span class="stars">⭐ {{ docteur.noteMoyenne || '0.0' }}/5</span>
+              <span class="reviews">({{ docteur.nombreAvis || 0 }} avis)</span>
             </div>
-            <p class="tarif">{{ docteur.tarifConsultation }} €</p>
+            <p class="tarif">{{ docteur.tarifConsultation || 'Non spécifié' }} €</p>
+            
+            <div class="docteur-meta">
+              <span class="meta-item" *ngIf="docteur.langue">
+                🌐 {{ docteur.langue }}
+              </span>
+              <span class="meta-item" *ngIf="docteur.telephone">
+                📞 {{ docteur.telephone }}
+              </span>
+            </div>
           </div>
           
           <div class="selection-indicator" *ngIf="selectedDocteur?.id === docteur.id">
             ✓
           </div>
         </div>
+
+        <div *ngIf="filteredDocteurs.length === 0" class="empty-state">
+          <div class="empty-icon">👨‍⚕️</div>
+          <p>Aucun docteur trouvé</p>
+          <small>Essayez de modifier vos critères de recherche</small>
+        </div>
       </div>
     </div>
 
     <!-- Sélection de la date et heure -->
-    <div class="form-section" *ngIf="selectedDocteur">
-      <h2>2. Choisir la Date et l'Heure</h2>
+    <div class="form-section date-time-section" *ngIf="selectedDocteur">
+      <h2>📅 2. Choisir la Date et l'Heure</h2>
+      
+      <div class="selected-docteur-info">
+        <div class="selected-docteur-avatar">
+          <img 
+            [src]="getPhotoUrl(selectedDocteur.photo)" 
+            [alt]="getDocteurDisplayName(selectedDocteur)"
+            (error)="onPhotoError($event)">
+        </div>
+        <div class="selected-docteur-details">
+          <h4>{{ getDocteurDisplayName(selectedDocteur) }}</h4>
+          <p class="specialite">{{ selectedDocteur.specialite?.titre }}</p>
+        </div>
+      </div>
       
       <div class="date-time-selection">
         <div class="form-group">
-          <label for="date">Date</label>
+          <label for="date">Date du rendez-vous</label>
           <input 
             type="date" 
             id="date"
@@ -74,14 +112,16 @@
         </div>
 
         <div class="form-group">
-          <label for="heure">Heure</label>
+          <label for="heure">Heure du rendez-vous</label>
           <select 
             id="heure"
             formControlName="heure"
             class="form-control"
             [class.is-invalid]="rendezVousForm.get('heure')?.invalid && rendezVousForm.get('heure')?.touched">
             <option value="">Sélectionnez une heure</option>
-            <option *ngFor="let slot of availableSlots" [value]="slot">{{ slot }}</option>
+            <option *ngFor="let slot of availableSlots" [value]="slot">
+              {{ slot }}
+            </option>
           </select>
           <div class="invalid-feedback" *ngIf="rendezVousForm.get('heure')?.errors?.['required'] && rendezVousForm.get('heure')?.touched">
             L'heure est requise
@@ -101,6 +141,7 @@
             <div class="suggested-buttons">
               <button 
                 *ngFor="let creneau of creneauxSuggerees" 
+                type="button"
                 class="btn btn-outline btn-sm"
                 (click)="utiliserCreneauSuggere(creneau)">
                 {{ creneau }}
@@ -109,11 +150,15 @@
           </div>
         </div>
       </div>
+
+      <div *ngIf="availableSlots.length > 0" class="available-slots-info">
+        <p class="slots-count">{{ availableSlots.length }} créneau(x) disponible(s) pour cette date</p>
+      </div>
     </div>
 
     <!-- Motif de la consultation -->
     <div class="form-section" *ngIf="selectedDocteur">
-      <h2>3. Motif de la Consultation</h2>
+      <h2>📝 3. Motif de la Consultation</h2>
       
       <div class="form-group">
         <label for="motif">Décrivez brièvement le motif de votre consultation</label>
@@ -122,17 +167,41 @@
           formControlName="motif"
           class="form-control"
           rows="4"
-          placeholder="Ex: Consultation de routine, douleurs particulières, suivi de traitement..."
+          placeholder="Ex: Consultation de routine, douleurs particulières, suivi de traitement, examen annuel..."
           [class.is-invalid]="rendezVousForm.get('motif')?.invalid && rendezVousForm.get('motif')?.touched">
         </textarea>
         <div class="invalid-feedback" *ngIf="rendezVousForm.get('motif')?.errors?.['required'] && rendezVousForm.get('motif')?.touched">
           Le motif est requis
         </div>
         <div class="invalid-feedback" *ngIf="rendezVousForm.get('motif')?.errors?.['minlength'] && rendezVousForm.get('motif')?.touched">
-          Minimum 10 caractères
+          Minimum 10 caractères (actuellement: {{ rendezVousForm.get('motif')?.value?.length || 0 }})
         </div>
         <div class="char-count">
-          {{ rendezVousForm.get('motif')?.value?.length || 0 }}/10 caractères
+          {{ rendezVousForm.get('motif')?.value?.length || 0 }}/10 caractères minimum
+        </div>
+      </div>
+    </div>
+
+    <!-- Récapitulatif -->
+    <div class="form-section recap-section" *ngIf="selectedDocteur && isFormReady()">
+      <h2>✅ 4. Récapitulatif</h2>
+      
+      <div class="recap-content">
+        <div class="recap-item">
+          <strong>Docteur:</strong>
+          <span>{{ getDocteurDisplayName(selectedDocteur) }} - {{ selectedDocteur.specialite?.titre }}</span>
+        </div>
+        <div class="recap-item">
+          <strong>Date:</strong>
+          <span>{{ rendezVousForm.get('date')?.value | date:'fullDate':'':'fr' }}</span>
+        </div>
+        <div class="recap-item">
+          <strong>Heure:</strong>
+          <span>{{ rendezVousForm.get('heure')?.value }}</span>
+        </div>
+        <div class="recap-item">
+          <strong>Motif:</strong>
+          <span class="motif-text">{{ rendezVousForm.get('motif')?.value }}</span>
         </div>
       </div>
     </div>
@@ -140,18 +209,46 @@
     <!-- Actions -->
     <div class="form-actions">
       <button type="button" class="btn btn-secondary" (click)="onCancel()">
-        Annuler et Retourner
+        <span class="btn-icon">←</span>
+        Annuler
       </button>
+      
       <button 
         type="submit" 
         class="btn btn-primary"
-        [disabled]="rendezVousForm.invalid || isLoading">
-        <span *ngIf="!isLoading">Confirmer le Rendez-vous</span>
-        <span *ngIf="isLoading" class="loading">
+        [disabled]="!isFormReady() || isLoading"
+        [class.loading]="isLoading">
+        <span *ngIf="!isLoading" class="btn-content">
+          <span class="btn-icon">✅</span>
+          Confirmer le Rendez-vous
+        </span>
+        <span *ngIf="isLoading" class="btn-content">
           <span class="spinner"></span>
-          Création...
+          Création en cours...
         </span>
       </button>
+    </div>
+
+    <!-- Indicateur de progression -->
+    <div class="progress-indicator" *ngIf="selectedDocteur">
+      <div class="progress-steps">
+        <div class="step completed">
+          <div class="step-number">1</div>
+          <span class="step-label">Docteur</span>
+        </div>
+        <div class="step completed">
+          <div class="step-number">2</div>
+          <span class="step-label">Date/Heure</span>
+        </div>
+        <div class="step" [class.completed]="rendezVousForm.get('motif')?.valid">
+          <div class="step-number">3</div>
+          <span class="step-label">Motif</span>
+        </div>
+        <div class="step" [class.completed]="isFormReady()">
+          <div class="step-number">4</div>
+          <span class="step-label">Confirmation</span>
+        </div>
+      </div>
     </div>
   </form>
 </div>

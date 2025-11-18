@@ -2,7 +2,7 @@ import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { DoctorService, RendezVous, Disponibilite, CreateDisponibiliteRequest, DisponibiliteRequest, Docteur, UpdateDocteurRequest, Specialite } from '../../services/doctor.service';
+import { DoctorService, RendezVous, Disponibilite, CreateDisponibiliteRequest, DisponibiliteRequest, Docteur, UpdateDocteurRequest, Specialite, StatistiquesDocteur, Patient } from '../../services/doctor.service';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../environments/environment';
 export enum DashboardTabs {
@@ -11,6 +11,7 @@ export enum DashboardTabs {
   DISPONIBILITES = 'disponibilites',
   PATIENTS = 'patients'
 }
+
 @Component({
   selector: 'app-doctor-dashboard',
   standalone: true,
@@ -23,16 +24,11 @@ export class DoctorDashboardComponent implements OnInit {
   rendezVous: RendezVous[] = [];
   rendezVousAujourdhui: RendezVous[] = [];
   disponibilites: Disponibilite[] = [];
-  // Utiliser l'enum pour les onglets
+  patients: Patient[] = [];
   activeTab: DashboardTabs = DashboardTabs.AUJOURDHUI;
-  
-  // Rendre l'enum accessible au template
   readonly DashboardTabs = DashboardTabs;
-
-  
   
   // États
-  
   isLoading: boolean = false;
   docteurId: number | null = null;
   
@@ -42,19 +38,19 @@ export class DoctorDashboardComponent implements OnInit {
   lundiProchain: Date = new Date();
   
   // Statistiques
-  statistiques: any = {
+  statistiques: StatistiquesDocteur = {
     totalRendezVous: 0,
     rendezVousConfirmes: 0,
     nouveauxPatients: 0,
-    revenuMensuel: 0
+    revenuMensuel: 0,
+    tauxOccupation: 0,
+    noteMoyenne: 0
   };
 
   // Propriétés pour les modales
   showModalDisponibilite: boolean = false;
   showModalGenererSemaine: boolean = false;
   showModalProfil: boolean = false;
-  
-  // Nouvelle propriété pour le menu profil
   showProfileMenu: boolean = false;
 
   nouvelleDisponibilite: any = {
@@ -73,24 +69,21 @@ export class DoctorDashboardComponent implements OnInit {
   photoPreview: string | null = null;
   
   // Formulaire de profil
-  profilForm: any = {
+  profilForm: UpdateDocteurRequest = {
     nom: '',
     prenom: '',
     telephone: '',
     adresse: '',
-    specialite: '',
+    specialiteId: undefined,
     numeroLicence: '',
-    anneesExperience: 0,
-    tarifConsultation: 0,
+    anneesExperience: undefined,
+    tarifConsultation: undefined,
     langue: 'fr'
   };
 
-  // Ajoutez ces propriétés pour gérer les erreurs
+  // Gestion des erreurs
   errorMessage: string = '';
   hasConnectionError: boolean = false;
-
-  // Rendre environment accessible au template
-  environment = environment;
 
   constructor(
     private doctorService: DoctorService,
@@ -99,7 +92,6 @@ export class DoctorDashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Vérifier d'abord si l'utilisateur est un docteur
     if (!this.authService.isDoctor()) {
       this.showError('Accès réservé aux docteurs');
       this.router.navigate(['/login']);
@@ -114,17 +106,11 @@ export class DoctorDashboardComponent implements OnInit {
       return;
     }
 
-    console.log('🟢 Dashboard chargé pour docteur ID:', this.docteurId);
-    console.log('🟢 Token présent:', !!this.authService.getToken());
-    console.log('🟢 Role:', this.authService.getRole());
-
     this.initializeDates();
     this.loadDonnees();
     this.loadMonProfil();
     this.loadSpecialites();
   }
-
-  // ==================== GESTION DES ERREURS ====================
 
   private showError(message: string): void {
     this.errorMessage = message;
@@ -144,8 +130,6 @@ export class DoctorDashboardComponent implements OnInit {
     this.loadSpecialites();
   }
 
-  // ==================== GESTION DU MENU PROFIL ====================
-
   toggleProfileMenu(): void {
     this.showProfileMenu = !this.showProfileMenu;
   }
@@ -158,22 +142,12 @@ export class DoctorDashboardComponent implements OnInit {
     }
   }
 
-  // ==================== INITIALISATION ====================
-
   private initializeDates(): void {
     const today = new Date();
-    
-    // Date d'aujourd'hui formatée
     this.todayDate = this.getDateFormatee(today.toISOString());
-    
-    // Date minimale pour les inputs (aujourd'hui)
     this.minDate = this.formatDateForInput(today);
-    
-    // Lundi prochain
     this.lundiProchain = this.getLundiProchain();
   }
-
-  // ==================== CHARGEMENT DES DONNÉES ====================
 
   loadDonnees(): void {
     if (!this.docteurId) return;
@@ -181,17 +155,15 @@ export class DoctorDashboardComponent implements OnInit {
     this.isLoading = true;
     this.clearError();
 
-    console.log('📥 Chargement des données...');
-
     // Charger les rendez-vous d'aujourd'hui
-    this.doctorService.getRendezVousAujourdhui(this.docteurId).subscribe({
+    const aujourdhui = new Date().toISOString().split('T')[0];
+    this.doctorService.getRendezVousParDate(this.docteurId, aujourdhui).subscribe({
       next: (data) => {
         this.rendezVousAujourdhui = data;
-        console.log('✅ Rendez-vous aujourd\'hui chargés:', data.length);
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('❌ Erreur chargement rendez-vous:', error);
+        console.error('Erreur chargement rendez-vous aujourd\'hui:', error);
         this.showError('Erreur de chargement des rendez-vous');
         this.isLoading = false;
       }
@@ -201,11 +173,10 @@ export class DoctorDashboardComponent implements OnInit {
     this.doctorService.getMesRendezVous(this.docteurId).subscribe({
       next: (data) => {
         this.rendezVous = data;
-        console.log('✅ Tous les rendez-vous chargés:', data.length);
         this.calculerStatistiquesParDefaut();
       },
       error: (error) => {
-        console.error('❌ Erreur chargement rendez-vous:', error);
+        console.error('Erreur chargement rendez-vous:', error);
         this.showError('Erreur de chargement des rendez-vous');
       }
     });
@@ -214,11 +185,20 @@ export class DoctorDashboardComponent implements OnInit {
     this.doctorService.getMesDisponibilites(this.docteurId).subscribe({
       next: (data) => {
         this.disponibilites = data;
-        console.log('✅ Disponibilités chargées:', data.length);
       },
       error: (error) => {
-        console.error('❌ Erreur chargement disponibilités:', error);
+        console.error('Erreur chargement disponibilités:', error);
         this.showError('Erreur de chargement des disponibilités');
+      }
+    });
+
+    // Charger les patients
+    this.doctorService.getMesPatients(this.docteurId).subscribe({
+      next: (data) => {
+        this.patients = data;
+      },
+      error: (error) => {
+        console.error('Erreur chargement patients:', error);
       }
     });
 
@@ -226,10 +206,9 @@ export class DoctorDashboardComponent implements OnInit {
     this.doctorService.getStatistiquesDocteur(this.docteurId).subscribe({
       next: (data) => {
         this.statistiques = data;
-        console.log('✅ Statistiques chargées:', data);
       },
       error: (error) => {
-        console.error('❌ Erreur chargement statistiques:', error);
+        console.error('Erreur chargement statistiques:', error);
         this.showError('Erreur de chargement des statistiques');
         this.calculerStatistiquesParDefaut();
       }
@@ -249,22 +228,19 @@ export class DoctorDashboardComponent implements OnInit {
       totalRendezVous: rdvCeMois.length,
       rendezVousConfirmes: rdvCeMois.filter(r => r.statut === 'CONFIRME').length,
       nouveauxPatients: patientsUniques.length,
-      revenuMensuel: rdvCeMois.filter(r => r.statut === 'TERMINE').length * 50
+      revenuMensuel: rdvCeMois.filter(r => r.statut === 'TERMINE').length * (this.monProfil?.tarifConsultation || 50),
+      tauxOccupation: Math.round((rdvCeMois.length / 20) * 100), // Estimation
+      noteMoyenne: this.monProfil?.noteMoyenne || 0
     };
   }
-
-  // ==================== GESTION DES SPÉCIALITÉS ====================
 
   loadSpecialites(): void {
     this.doctorService.getSpecialites().subscribe({
       next: (specialites) => {
         this.specialites = specialites;
-        console.log('✅ Spécialités chargées:', this.specialites.length);
       },
       error: (error) => {
         console.error('❌ Erreur chargement spécialités:', error);
-        this.showError('Erreur de chargement des spécialités');
-        // Spécialités par défaut en cas d'erreur
         this.specialites = this.getSpecialitesParDefaut();
       }
     });
@@ -272,107 +248,57 @@ export class DoctorDashboardComponent implements OnInit {
 
   private getSpecialitesParDefaut(): Specialite[] {
     return [
-      { id: 1, titre: 'Cardiologie', description: 'Spécialiste des maladies du cœur et des vaisseaux sanguins' },
+      { id: 1, titre: 'Cardiologie', description: 'Spécialiste des maladies du cœur' },
       { id: 2, titre: 'Dermatologie', description: 'Spécialiste des maladies de la peau' },
-      { id: 3, titre: 'Pédiatrie', description: 'Spécialiste des enfants et des adolescents' },
-      { id: 4, titre: 'Gynécologie', description: 'Spécialiste de la santé féminine' },
-      { id: 5, titre: 'Neurologie', description: 'Spécialiste des maladies du système nerveux' },
-      { id: 6, titre: 'Ophtalmologie', description: 'Spécialiste des yeux et de la vision' },
-      { id: 7, titre: 'Orthopédie', description: 'Spécialiste des problèmes musculo-squelettiques' },
-      { id: 8, titre: 'Psychiatrie', description: 'Spécialiste des troubles mentaux' },
-      { id: 9, titre: 'Radiologie', description: 'Spécialiste de l\'imagerie médicale' },
-      { id: 10, titre: 'Chirurgie', description: 'Spécialiste des interventions chirurgicales' }
+      { id: 3, titre: 'Pédiatrie', description: 'Spécialiste des enfants' },
+      { id: 4, titre: 'Gynécologie', description: 'Spécialiste de la santé féminine' }
     ];
   }
 
-  getDescriptionSpecialite(specialiteId: string): string {
-    if (!specialiteId) return '';
+  setActiveTab(tab: DashboardTabs): void {
+    this.activeTab = tab;
     
-    const specialite = this.specialites.find(s => s.id === +specialiteId);
-    return specialite?.description || 'Description non disponible';
+    if (tab === DashboardTabs.PATIENTS && this.patients.length === 0) {
+      this.loadPatients();
+    }
   }
 
-  // ==================== GESTION DES ONGLETS ====================
+  loadPatients(): void {
+    if (!this.docteurId) return;
 
-  setActiveTab(tab: DashboardTabs): void {
-  this.activeTab = tab;
-  console.log('🔍 Onglet activé:', tab);
-}
-
-  // ==================== GESTION DES RENDEZ-VOUS ====================
-
-  confirmerRendezVous(rendezVousId: number): void {
-    console.log('✅ Confirmation du rendez-vous:', rendezVousId);
-    this.doctorService.confirmerRendezVous(rendezVousId).subscribe({
-      next: () => {
-        this.loadDonnees();
-        alert('Rendez-vous confirmé avec succès');
+    this.doctorService.getMesPatients(this.docteurId).subscribe({
+      next: (data) => {
+        this.patients = data;
       },
       error: (error) => {
-        console.error('❌ Erreur confirmation:', error);
-        alert('Erreur lors de la confirmation: ' + error.message);
+        console.error('Erreur chargement patients:', error);
       }
     });
   }
 
   terminerRendezVous(rendezVousId: number): void {
-    console.log('🏁 Finalisation du rendez-vous:', rendezVousId);
     this.doctorService.terminerRendezVous(rendezVousId).subscribe({
       next: () => {
         this.loadDonnees();
         alert('Rendez-vous marqué comme terminé');
       },
       error: (error) => {
-        console.error('❌ Erreur finalisation:', error);
         alert('Erreur: ' + error.message);
       }
     });
   }
 
-  annulerRendezVous(rendezVousId: number): void {
-    if (confirm('Êtes-vous sûr de vouloir annuler ce rendez-vous ?')) {
-      console.log('❌ Annulation du rendez-vous:', rendezVousId);
-      this.doctorService.annulerRendezVous(rendezVousId).subscribe({
-        next: () => {
-          this.loadDonnees();
-          alert('Rendez-vous annulé avec succès');
-        },
-        error: (error) => {
-          console.error('❌ Erreur annulation:', error);
-          alert('Erreur lors de l\'annulation: ' + error.message);
-        }
-      });
-    }
-  }
-
-  ajouterNotes(rendezVousId: number, notes: string): void {
-    if (notes.trim()) {
-      console.log('📝 Ajout de notes au rendez-vous:', rendezVousId);
-      this.doctorService.ajouterNotesRendezVous(rendezVousId, notes).subscribe({
-        next: () => {
-          this.loadDonnees();
-          alert('Notes ajoutées avec succès');
-        },
-        error: (error) => {
-          console.error('❌ Erreur ajout notes:', error);
-          alert('Erreur lors de l\'ajout des notes: ' + error.message);
-        }
-      });
-    }
-  }
-
   ouvrirModalNotes(rdv: RendezVous): void {
     const notes = prompt('Ajouter des notes pour ce rendez-vous:', rdv.notes || '');
     if (notes !== null) {
-      this.ajouterNotes(rdv.id, notes);
+      // Note: Le service DoctorService n'a pas de méthode pour ajouter des notes
+      // Implémentez cette fonctionnalité si nécessaire
+      alert('Fonctionnalité d\'ajout de notes à implémenter');
     }
   }
 
-  // ==================== GESTION DES DISPONIBILITÉS ====================
-
   ouvrirModalDisponibilite(): void {
-    const aujourdhui = new Date();
-    const demain = new Date(aujourdhui);
+    const demain = new Date();
     demain.setDate(demain.getDate() + 1);
 
     this.nouvelleDisponibilite = {
@@ -403,8 +329,6 @@ export class DoctorDashboardComponent implements OnInit {
       return;
     }
 
-    console.log('➕ Ajout disponibilité:', this.nouvelleDisponibilite);
-
     if (this.nouvelleDisponibilite.type === 'disponible') {
       const request: CreateDisponibiliteRequest = {
         dateHeureDebut: dateHeureDebut.toISOString(),
@@ -419,7 +343,6 @@ export class DoctorDashboardComponent implements OnInit {
           alert('Disponibilité ajoutée avec succès');
         },
         error: (error) => {
-          console.error('❌ Erreur ajout disponibilité:', error);
           alert('Erreur: ' + error.message);
         }
       });
@@ -438,7 +361,6 @@ export class DoctorDashboardComponent implements OnInit {
           alert('Indisponibilité ajoutée avec succès');
         },
         error: (error) => {
-          console.error('❌ Erreur ajout indisponibilité:', error);
           alert('Erreur: ' + error.message);
         }
       });
@@ -450,56 +372,36 @@ export class DoctorDashboardComponent implements OnInit {
   }
 
   genererSemaineDisponibilites(): void {
-    if (!this.docteurId) return;
-
-    console.log('📅 Génération disponibilités semaine:', this.lundiProchain);
-    
-    this.doctorService.genererDisponibilitesSemaine(this.docteurId, this.lundiProchain.toISOString())
-      .subscribe({
-        next: () => {
-          this.loadDonnees();
-          this.fermerModalDisponibilite();
-          alert('Disponibilités de la semaine générées avec succès');
-        },
-        error: (error) => {
-          console.error('❌ Erreur génération semaine:', error);
-          alert('Erreur: ' + error.message);
-        }
-      });
+    // Note: Le service DoctorService n'a pas de méthode genererDisponibilitesSemaine
+    // Implémentez cette fonctionnalité si nécessaire
+    alert('Fonctionnalité de génération de semaine à implémenter');
+    this.fermerModalDisponibilite();
   }
 
   supprimerDisponibilite(disponibiliteId: number): void {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette disponibilité ?')) {
-      console.log('🗑️ Suppression disponibilité:', disponibiliteId);
       this.doctorService.supprimerDisponibilite(disponibiliteId).subscribe({
         next: () => {
           this.loadDonnees();
           alert('Disponibilité supprimée avec succès');
         },
         error: (error) => {
-          console.error('❌ Erreur suppression:', error);
           alert('Erreur lors de la suppression: ' + error.message);
         }
       });
     }
   }
 
-  // ==================== GESTION DU PROFIL ====================
-
   loadMonProfil(): void {
     if (!this.docteurId) return;
-
-    console.log('👤 Chargement du profil...');
     
     this.doctorService.getMonProfil(this.docteurId).subscribe({
       next: (profil) => {
         this.monProfil = profil;
         this.initializeProfilForm(profil);
-        console.log('✅ Profil chargé:', profil);
       },
       error: (error) => {
-        console.error('❌ Erreur chargement profil:', error);
-        this.showError('Erreur de chargement du profil');
+        console.error('Erreur chargement profil:', error);
       }
     });
   }
@@ -510,10 +412,10 @@ export class DoctorDashboardComponent implements OnInit {
       prenom: profil.prenom || '',
       telephone: profil.telephone || '',
       adresse: profil.adresse || '',
-      specialite: profil.specialite?.id || '',
+      specialiteId: profil.specialite?.id,
       numeroLicence: profil.numeroLicence || '',
-      anneesExperience: profil.anneesExperience || 0,
-      tarifConsultation: profil.tarifConsultation || 0,
+      anneesExperience: profil.anneesExperience,
+      tarifConsultation: profil.tarifConsultation,
       langue: profil.langue || 'fr'
     };
 
@@ -536,13 +438,11 @@ export class DoctorDashboardComponent implements OnInit {
   onPhotoSelected(event: any): void {
     const file = event.target.files[0];
     if (file) {
-      // Vérifier le type de fichier
       if (!file.type.match('image.*')) {
         alert('Veuillez sélectionner une image valide');
         return;
       }
 
-      // Vérifier la taille (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         alert('L\'image ne doit pas dépasser 5MB');
         return;
@@ -550,7 +450,6 @@ export class DoctorDashboardComponent implements OnInit {
 
       this.photoFile = file;
 
-      // Prévisualisation
       const reader = new FileReader();
       reader.onload = (e: any) => {
         this.photoPreview = e.target.result;
@@ -567,28 +466,22 @@ export class DoctorDashboardComponent implements OnInit {
   mettreAJourProfil(): void {
     if (!this.docteurId || !this.validerProfil()) return;
 
-    const specialiteId = +this.profilForm.specialite;
-
     const request: UpdateDocteurRequest = {
       nom: this.profilForm.nom,
       prenom: this.profilForm.prenom,
       telephone: this.profilForm.telephone,
       adresse: this.profilForm.adresse,
-      specialiteId: specialiteId,
+      specialiteId: this.profilForm.specialiteId,
       numeroLicence: this.profilForm.numeroLicence,
       anneesExperience: this.profilForm.anneesExperience,
       tarifConsultation: this.profilForm.tarifConsultation,
       langue: this.profilForm.langue
     };
 
-    console.log('✏️ Mise à jour profil:', request);
-
-    // Mettre à jour les informations de base
     this.doctorService.updateMonProfil(this.docteurId, request).subscribe({
       next: (profil) => {
         this.monProfil = profil;
         
-        // Mettre à jour la photo si une nouvelle a été sélectionnée
         if (this.photoFile) {
           this.mettreAJourPhoto();
         } else {
@@ -598,7 +491,6 @@ export class DoctorDashboardComponent implements OnInit {
         }
       },
       error: (error) => {
-        console.error('❌ Erreur mise à jour profil:', error);
         alert('Erreur lors de la mise à jour du profil: ' + error.message);
       }
     });
@@ -606,8 +498,6 @@ export class DoctorDashboardComponent implements OnInit {
 
   private mettreAJourPhoto(): void {
     if (!this.docteurId || !this.photoFile) return;
-
-    console.log('🖼️ Mise à jour photo...');
     
     this.doctorService.updatePhotoProfil(this.docteurId, this.photoFile).subscribe({
       next: (profil) => {
@@ -617,7 +507,6 @@ export class DoctorDashboardComponent implements OnInit {
         this.loadDonnees();
       },
       error: (error) => {
-        console.error('❌ Erreur mise à jour photo:', error);
         alert('Erreur lors de la mise à jour de la photo: ' + error.message);
       }
     });
@@ -639,12 +528,12 @@ export class DoctorDashboardComponent implements OnInit {
       return false;
     }
 
-    if (!this.profilForm.specialite) {
+    if (!this.profilForm.specialiteId) {
       alert('Veuillez sélectionner une spécialité');
       return false;
     }
 
-    if (this.profilForm.tarifConsultation <= 0) {
+    if (!this.profilForm.tarifConsultation || this.profilForm.tarifConsultation <= 0) {
       alert('Le tarif de consultation doit être supérieur à 0');
       return false;
     }
@@ -652,14 +541,14 @@ export class DoctorDashboardComponent implements OnInit {
     return true;
   }
 
-  // ==================== MÉTHODES UTILITAIRES ====================
-
+  // Méthodes utilitaires
   getStatutBadgeClass(statut: string): string {
     switch (statut) {
       case 'PLANIFIE': return 'badge-warning';
       case 'CONFIRME': return 'badge-success';
       case 'ANNULE': return 'badge-danger';
       case 'TERMINE': return 'badge-info';
+      case 'ABSENT': return 'badge-dark';
       default: return 'badge-secondary';
     }
   }
@@ -677,14 +566,6 @@ export class DoctorDashboardComponent implements OnInit {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    });
-  }
-
-  getDateCourte(dateHeure: string): string {
-    return new Date(dateHeure).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
     });
   }
 
@@ -725,35 +606,33 @@ export class DoctorDashboardComponent implements OnInit {
     return rdvsPatient.length > 0 ? rdvsPatient[0].dateHeure : '';
   }
 
-  // ==================== GESTION DES PHOTOS ====================
-
   getPhotoUrl(photoPath: string): string {
-    if (!photoPath) {
-      return '';
-    }
-    
-    // Nettoyer l'URL pour éviter les doubles slashes
-    let cleanPath = photoPath;
-    if (cleanPath.startsWith('/')) {
-      cleanPath = cleanPath.substring(1);
-    }
-    
-    // environment.apiUrl se termine déjà par /, donc pas besoin de / supplémentaire
-    return `${environment.apiUrl}${cleanPath}`;
+  if (!photoPath) {
+    return '/assets/default-avatar.png';
   }
-
+  
+  // Débogage
+  console.log('Original photo path:', photoPath);
+  
+  // Extraire seulement le nom du fichier
+  let fileName = photoPath;
+  
+  if (photoPath.includes('/')) {
+    fileName = photoPath.substring(photoPath.lastIndexOf('/') + 1);
+  }
+  
+  const finalUrl = `${environment.apiPhoto}${fileName}`;
+  console.log('Final photo URL:', finalUrl);
+  
+  return finalUrl;
+}
   getSafePhotoUrl(): string {
-    if (!this.monProfil?.photo) {
-      return '';
-    }
+    if (!this.monProfil?.photo) return 'assets/default-avatar.png';
     return this.getPhotoUrl(this.monProfil.photo);
   }
 
   onPhotoError(event: any): void {
-    console.error('❌ Erreur de chargement de la photo');
-    console.error('URL tentée:', event.target.src);
-    
-    // Masquer l'image et montrer le placeholder
+    console.error('Erreur de chargement de la photo');
     event.target.style.display = 'none';
     const avatarElement = event.target.closest('.profile-avatar');
     const placeholder = avatarElement?.querySelector('.avatar-placeholder');
@@ -767,8 +646,6 @@ export class DoctorDashboardComponent implements OnInit {
     const nom = this.monProfil?.nom || 'R';
     return (prenom.charAt(0) + nom.charAt(0)).toUpperCase();
   }
-
-  // ==================== MÉTHODES POUR LES HEURES ET DATES ====================
 
   genererHeures(): string[] {
     const heures = [];
@@ -796,8 +673,6 @@ export class DoctorDashboardComponent implements OnInit {
     return lundi;
   }
 
-  // ==================== MÉTHODES DE NAVIGATION ====================
-  
   deconnexion(): void {
     this.showProfileMenu = false;
     if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {

@@ -33,5 +33,5 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard],
     data: { role: 'DOCTEUR' }
   },
-  { path: '**', redirectTo: '' } // Redirection pour les routes inconnues
+  { path: '**', redirectTo: '' }
 ];

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { FormsModule } from '@angular/forms'; // IMPORT AJOUTÉ
+import { FormsModule } from '@angular/forms';
 import { AdminService, Utilisateur, StatistiquesGlobales, RendezVousAdmin } from '../../services/admin.service';
 import { AuthService } from '../../services/auth.service';
 
@@ -10,7 +10,7 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [
     CommonModule, 
-    FormsModule // IMPORT AJOUTÉ
+    FormsModule
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
@@ -120,7 +120,7 @@ export class DashboardComponent implements OnInit {
   }
 
   onRechercheChange(): void {
-    // Le filtrage se fait côté template avec pipe
+    // Le filtrage se fait côté template avec getUtilisateursFiltres()
   }
 
   // Actions sur les utilisateurs
@@ -129,11 +129,15 @@ export class DashboardComponent implements OnInit {
     if (confirm(`Êtes-vous sûr de vouloir ${action} ${utilisateur.prenom} ${utilisateur.nom} ?`)) {
       this.adminService.toggleUtilisateurActif(utilisateur.id).subscribe({
         next: (updatedUser) => {
-          utilisateur.actif = updatedUser.actif;
+          // Mettre à jour l'utilisateur dans la liste
+          const index = this.utilisateurs.findIndex(u => u.id === utilisateur.id);
+          if (index !== -1) {
+            this.utilisateurs[index] = updatedUser;
+          }
           alert(`Utilisateur ${action} avec succès`);
         },
         error: (error) => {
-          alert('Erreur: ' + error.error);
+          alert('Erreur: ' + error.message);
         }
       });
     }
@@ -147,7 +151,7 @@ export class DashboardComponent implements OnInit {
           alert('Utilisateur supprimé avec succès');
         },
         error: (error) => {
-          alert('Erreur: ' + error.error);
+          alert('Erreur: ' + error.message);
         }
       });
     }
@@ -188,6 +192,7 @@ export class DashboardComponent implements OnInit {
       case 'CONFIRME': return 'badge-success';
       case 'ANNULE': return 'badge-danger';
       case 'TERMINE': return 'badge-info';
+      case 'ABSENT': return 'badge-dark';
       default: return 'badge-secondary';
     }
   }
@@ -220,14 +225,12 @@ export class DashboardComponent implements OnInit {
     this.setActiveTab('rapports');
   }
 
-  // Méthodes pour les modales (à implémenter)
+  // Méthodes pour les modales
   ouvrirModalCreationUtilisateur(): void {
     alert('Fonctionnalité à implémenter: Créer un utilisateur');
-    // Implémentez une modal pour créer un utilisateur
   }
 
   ouvrirModalEditionUtilisateur(utilisateur: Utilisateur): void {
     alert(`Fonctionnalité à implémenter: Éditer ${utilisateur.prenom} ${utilisateur.nom}`);
-    // Implémentez une modal pour éditer un utilisateur
   }
 }

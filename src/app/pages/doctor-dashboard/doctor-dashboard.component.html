@@ -155,16 +155,14 @@
             <strong>Notes:</strong> {{ rdv.notes }}
           </div>
 
-          <div class="rdv-actions" *ngIf="rdv.statut !== 'TERMINE' && rdv.statut !== 'ANNULE'">
-            <button *ngIf="rdv.statut === 'PLANIFIE'" class="btn btn-success btn-sm" (click)="confirmerRendezVous(rdv.id)">
-              Confirmer
-            </button>
-            <button *ngIf="rdv.statut === 'CONFIRME'" class="btn btn-info btn-sm" (click)="terminerRendezVous(rdv.id)">
+          <div class="rdv-actions" *ngIf="rdv.statut !== 'TERMINE' && rdv.statut !== 'ANNULE' && rdv.statut !== 'ABSENT'">
+            <!-- Supprimé le bouton Confirmer car non disponible dans DoctorService -->
+            <button *ngIf="rdv.statut === 'CONFIRME' || rdv.statut === 'PLANIFIE'" 
+                    class="btn btn-info btn-sm" 
+                    (click)="terminerRendezVous(rdv.id)">
               Terminer
             </button>
-            <button class="btn btn-danger btn-sm" (click)="annulerRendezVous(rdv.id)">
-              Annuler
-            </button>
+            <!-- Supprimé le bouton Annuler car non disponible dans DoctorService -->
             <button class="btn btn-outline btn-sm" (click)="ouvrirModalNotes(rdv)">
               Ajouter Notes
             </button>
@@ -215,16 +213,14 @@
             <strong>Notes:</strong> {{ rdv.notes }}
           </div>
 
-          <div class="rdv-actions" *ngIf="rdv.statut !== 'TERMINE' && rdv.statut !== 'ANNULE'">
-            <button *ngIf="rdv.statut === 'PLANIFIE'" class="btn btn-success btn-sm" (click)="confirmerRendezVous(rdv.id)">
-              Confirmer
-            </button>
-            <button *ngIf="rdv.statut === 'CONFIRME'" class="btn btn-info btn-sm" (click)="terminerRendezVous(rdv.id)">
+          <div class="rdv-actions" *ngIf="rdv.statut !== 'TERMINE' && rdv.statut !== 'ANNULE' && rdv.statut !== 'ABSENT'">
+            <!-- Supprimé le bouton Confirmer car non disponible dans DoctorService -->
+            <button *ngIf="rdv.statut === 'CONFIRME' || rdv.statut === 'PLANIFIE'" 
+                    class="btn btn-info btn-sm" 
+                    (click)="terminerRendezVous(rdv.id)">
               Terminer
             </button>
-            <button class="btn btn-danger btn-sm" (click)="annulerRendezVous(rdv.id)">
-              Annuler
-            </button>
+            <!-- Supprimé le bouton Annuler car non disponible dans DoctorService -->
             <button class="btn btn-outline btn-sm" (click)="ouvrirModalNotes(rdv)">
               Notes
             </button>
@@ -281,36 +277,36 @@
       <div class="section-header">
         <h2>Mes Patients</h2>
         <div class="header-actions">
-          <button class="btn btn-outline" (click)="loadDonnees()" [disabled]="isLoading">
+          <button class="btn btn-outline" (click)="loadPatients()" [disabled]="isLoading">
             🔄 Actualiser
           </button>
         </div>
       </div>
 
-      <div *ngIf="getPatientsUniques().length === 0" class="empty-state">
+      <div *ngIf="patients.length === 0" class="empty-state">
         <div class="empty-icon">👥</div>
         <p>Aucun patient pour le moment</p>
         <small>Vos patients apparaîtront ici après leur premier rendez-vous</small>
       </div>
 
-      <div *ngIf="getPatientsUniques().length > 0" class="patients-list">
-        <div *ngFor="let rdv of getPatientsUniques()" class="patient-card">
+      <div *ngIf="patients.length > 0" class="patients-list">
+        <div *ngFor="let patient of patients" class="patient-card">
           <div class="patient-avatar">
-            {{ rdv.patient.prenom.charAt(0) }}{{ rdv.patient.nom.charAt(0) }}
+            {{ patient.prenom.charAt(0) }}{{ patient.nom.charAt(0) }}
           </div>
           <div class="patient-info">
-            <h3>{{ rdv.patient.prenom }} {{ rdv.patient.nom }}</h3>
-            <p class="patient-email">{{ rdv.patient.email }}</p>
-            <p *ngIf="rdv.patient.telephone" class="patient-phone">{{ rdv.patient.telephone }}</p>
-            <p *ngIf="rdv.patient.dateNaissance" class="patient-age">
-              {{ calculerAge(rdv.patient.dateNaissance) }} ans
+            <h3>{{ patient.prenom }} {{ patient.nom }}</h3>
+            <p class="patient-email">{{ patient.email }}</p>
+            <p *ngIf="patient.telephone" class="patient-phone">{{ patient.telephone }}</p>
+            <p *ngIf="patient.dateNaissance" class="patient-age">
+              {{ calculerAge(patient.dateNaissance) }} ans
             </p>
-            <p *ngIf="rdv.patient.antecedentsMedicaux" class="patient-antecedents">
-              <strong>Antécédents:</strong> {{ rdv.patient.antecedentsMedicaux }}
+            <p *ngIf="patient.antecedentsMedicaux" class="patient-antecedents">
+              <strong>Antécédents:</strong> {{ patient.antecedentsMedicaux }}
             </p>
           </div>
           <div class="patient-stats">
-            <span class="stat">Dernier RDV: {{ getDernierRendezVous(rdv.patient.id) | date:'dd/MM/yyyy' }}</span>
+            <span class="stat">Membre depuis: {{ getDateFormatee(patient.email) }}</span>
           </div>
         </div>
       </div>
@@ -413,10 +409,10 @@
           <div class="form-group">
             <label>Spécialité Médicale *</label>
             <select 
-              [(ngModel)]="profilForm.specialite" 
+              [(ngModel)]="profilForm.specialiteId" 
               class="form-control" 
               required
-              [class.is-invalid]="!profilForm.specialite">
+              [class.is-invalid]="!profilForm.specialiteId">
               <option value="">Choisissez votre spécialité</option>
               <option 
                 *ngFor="let spec of specialites" 
@@ -424,13 +420,13 @@
                 {{ spec.titre }}
               </option>
             </select>
-            <div class="invalid-feedback" *ngIf="!profilForm.specialite">
+            <div class="invalid-feedback" *ngIf="!profilForm.specialiteId">
               Veuillez sélectionner une spécialité
             </div>
             
-            <div *ngIf="profilForm.specialite" class="specialite-description">
+            <div *ngIf="profilForm.specialiteId" class="specialite-description">
               <small class="text-muted">
-                {{ getDescriptionSpecialite(profilForm.specialite) }}
+               
               </small>
             </div>
           </div>
